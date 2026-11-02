@@ -86,12 +86,16 @@ class ExceptionAdvice {
         return respond(apiStatus.httpStatus, apiStatus, request)
     }
 
-    /** DTO 에 적은 검증 메시지(@NotBlank(message = ...))를 응답에 그대로 노출한다 */
+    /**
+     * DTO 에 적은 검증 메시지(@NotBlank(message = ...))를 응답에 그대로 노출한다.
+     * 타입 변환 실패(?status=FOO 등)는 내부 메시지 대신 ApiStatus 기본 메시지를 쓴다
+     */
     private fun validationMessage(ex: Exception): String? =
         when (ex) {
             is MethodArgumentNotValidException -> {
                 ex.bindingResult.fieldErrors
                     .firstOrNull()
+                    ?.takeUnless { it.isBindingFailure }
                     ?.defaultMessage
             }
 

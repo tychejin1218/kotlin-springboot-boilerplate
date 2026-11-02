@@ -1,5 +1,7 @@
 package com.example.api.common.response
 
+import org.springframework.data.domain.Page
+
 /**
  * 페이지 응답
  *
@@ -32,3 +34,14 @@ data class PageResponse<T>(
         }
     }
 }
+
+/** Spring Data [Page] → [PageResponse]. 페이지 계산은 Page 의 값을 그대로 쓴다 */
+fun <T : Any, R : Any> Page<T>.toPageResponse(transform: (T) -> R): PageResponse<R> =
+    PageResponse(
+        content = content.map(transform),
+        page = number,
+        size = size,
+        totalElements = totalElements,
+        totalPages = totalPages,
+        last = isLast,
+    )

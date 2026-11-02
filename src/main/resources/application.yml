@@ -19,9 +19,9 @@ spring:
     open-in-view: false
     hibernate:
       ddl-auto: none
+    # 날짜 컬럼은 UTC 로 저장한다. JVM 기본 시간대를 UTC 로 고정하므로(ApiApplication.main) 별도 변환 설정은 두지 않는다
     properties:
       hibernate:
-        jdbc.time_zone: UTC
         format_sql: true
         use_sql_comments: true
   profiles:
@@ -31,15 +31,6 @@ spring:
       dev: profiles-dev, logging-type-file-absolute, logging-level-dev
       stg: profiles-stg, logging-type-file-absolute, logging-level-stg
       prd: profiles-prd, logging-type-file-absolute, logging-level-prd
-
-# MyBatis 설정 (DataSource·트랜잭션은 JPA 와 공유)
-mybatis:
-  mapper-locations: classpath:mapper/**/*.xml
-  type-aliases-package: com.example.api.**.dto
-  configuration:
-    map-underscore-to-camel-case: true
-    # Kotlin data class(val) 에 생성자 파라미터 이름으로 매핑 (build.gradle.kts 의 javaParameters 필요)
-    arg-name-based-constructor-auto-mapping: true
 
 # Actuator 설정
 management:

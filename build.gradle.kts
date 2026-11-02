@@ -20,8 +20,6 @@ kotlin {
         // Spring의 null 안전성 어노테이션(JSpecify)을 Kotlin 타입에 엄격하게 반영
         // 생성자 파라미터의 어노테이션(@field:NotBlank 없이 @NotBlank)을 프로퍼티 필드에도 적용
         freeCompilerArgs.addAll("-Xjsr305=strict", "-Xannotation-default-target=param-property")
-        // MyBatis가 생성자 파라미터 이름으로 data class에 매핑할 수 있도록 파라미터 이름을 보존
-        javaParameters = true
     }
 }
 
@@ -49,12 +47,18 @@ dependencies {
 
     // Database
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
-    implementation("org.mybatis.spring.boot:mybatis-spring-boot-starter:4.1.0")
     runtimeOnly("com.mysql:mysql-connector-j")
+
+    // Kotlin JDSL: 타입 안전한 JPQL 쿼리 (동적 쿼리 포함). Spring Boot 4 는 boot4-support 모듈을 쓴다
+    val kotlinJdslVersion = "3.9.0"
+    implementation("com.linecorp.kotlin-jdsl:jpql-dsl:$kotlinJdslVersion")
+    implementation("com.linecorp.kotlin-jdsl:jpql-render:$kotlinJdslVersion")
+    implementation("com.linecorp.kotlin-jdsl:spring-data-jpa-boot4-support:$kotlinJdslVersion")
 
     // Test
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testImplementation("org.springframework.boot:spring-boot-starter-webmvc-test")
+    testImplementation("org.springframework.boot:spring-boot-starter-validation-test")
     testImplementation("org.springframework.boot:spring-boot-starter-data-jpa-test")
     testImplementation("org.springframework.boot:spring-boot-testcontainers")
     testImplementation("org.testcontainers:testcontainers-junit-jupiter")
@@ -87,6 +91,8 @@ val coverageExcludes =
 
 tasks.test {
     useJUnitPlatform()
+    // main() 의 TimeZone.setDefault(UTC) 와 같은 조건으로 테스트한다
+    systemProperty("user.timezone", "UTC")
     if (coverageEnabled) finalizedBy(tasks.jacocoTestReport)
 }
 

@@ -27,7 +27,7 @@ data class MainDataSourceProperties(
  * Read/Write 분리 DataSource
  *
  * `@Transactional(readOnly = true)` 는 Reader, 그 외 트랜잭션은 Writer 로 라우팅된다.
- * 라우팅 DataSource 를 @Primary 로 두기만 하고 JPA·MyBatis·트랜잭션 매니저는 Spring Boot 자동 구성을 그대로 쓴다.
+ * 라우팅 DataSource 를 @Primary 로 두기만 하고 JPA·Kotlin JDSL·트랜잭션 매니저는 Spring Boot 자동 구성을 그대로 쓴다.
  */
 @Configuration(proxyBeanMethods = false)
 class MainDataSourceConfig {

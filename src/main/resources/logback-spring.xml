@@ -60,7 +60,6 @@
     <!--특정 패키지 로그 레벨 설정-->
     <property name="LOG_LEVEL_root" value="INFO"/>
     <property name="LOG_LEVEL_com.example.api" value="INFO"/>
-    <property name="LOG_LEVEL_com.example.api.mapper" value="INFO"/>
     <property name="LOG_LEVEL_org.springframework" value="INFO"/>
     <property name="LOG_LEVEL_com.zaxxer.hikari" value="DEBUG"/>
     <property name="LOG_LEVEL_org.hibernate" value="INFO"/>
@@ -70,7 +69,6 @@
   <springProfile name="logging-level-dev">
     <property name="LOG_LEVEL_root" value="INFO"/>
     <property name="LOG_LEVEL_com.example.api" value="DEBUG"/>
-    <property name="LOG_LEVEL_com.example.api.mapper" value="DEBUG"/>
     <property name="LOG_LEVEL_org.springframework" value="INFO"/>
     <property name="LOG_LEVEL_com.zaxxer.hikari" value="INFO"/>
     <property name="LOG_LEVEL_org.hibernate" value="INFO"/>
@@ -80,7 +78,6 @@
   <springProfile name="logging-level-stg">
     <property name="LOG_LEVEL_root" value="INFO"/>
     <property name="LOG_LEVEL_com.example.api" value="INFO"/>
-    <property name="LOG_LEVEL_com.example.api.mapper" value="INFO"/>
     <property name="LOG_LEVEL_org.springframework" value="INFO"/>
     <property name="LOG_LEVEL_com.zaxxer.hikari" value="INFO"/>
     <property name="LOG_LEVEL_org.hibernate" value="INFO"/>
@@ -90,7 +87,6 @@
   <springProfile name="logging-level-prd">
     <property name="LOG_LEVEL_root" value="INFO"/>
     <property name="LOG_LEVEL_com.example.api" value="INFO"/>
-    <property name="LOG_LEVEL_com.example.api.mapper" value="INFO"/>
     <property name="LOG_LEVEL_org.springframework" value="INFO"/>
     <property name="LOG_LEVEL_com.zaxxer.hikari" value="INFO"/>
     <property name="LOG_LEVEL_org.hibernate" value="INFO"/>
@@ -106,11 +102,6 @@
   <!-- com.example.api -->
   <logger name="com.example.api"
     level="${LOG_LEVEL_com.example.api}"
-    additivity="false">
-    <appender-ref ref="PROFILE-APPENDER"/>
-  </logger>
-  <logger name="com.example.api.mapper"
-    level="${LOG_LEVEL_com.example.api.mapper}"
     additivity="false">
     <appender-ref ref="PROFILE-APPENDER"/>
   </logger>
