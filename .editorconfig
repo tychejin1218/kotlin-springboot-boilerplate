@@ -1,0 +1,18 @@
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+[*.{kt,kts}]
+indent_size = 4
+indent_style = space
+max_line_length = 120
+ktlint_code_style = ktlint_official
+# 테스트 함수명에 백틱 한글 이름을 허용
+ktlint_function_naming_ignore_when_annotated_with = Test, ParameterizedTest
+
+[*.{yml,yaml,xml,sql}]
+indent_size = 2

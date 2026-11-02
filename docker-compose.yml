@@ -1,0 +1,18 @@
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: kotlin-boilerplate-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: boilerplate_db
+      MYSQL_USER: boilerplate
+      MYSQL_PASSWORD: boilerplate
+    ports:
+      - "3307:3306"  # Java 보일러플레이트 MySQL(3306)과 충돌하지 않도록 3307
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./docker/init.sql:/docker-entrypoint-initdb.d/init.sql  # 최초 실행 시에만 적용
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+
+volumes:
+  mysql_data:

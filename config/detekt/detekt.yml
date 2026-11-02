@@ -1,0 +1,18 @@
+# detekt 기본 규칙(buildUponDefaultConfig) 위에 프로젝트 예외만 덮어쓴다
+style:
+  MaxLineLength:
+    maxLineLength: 120
+  # ApiStatus 같은 상태 코드 enum 과 HTTP 상태 숫자는 매직 넘버로 보지 않는다
+  MagicNumber:
+    excludes: ['**/test/**']
+    ignoreEnums: true
+
+naming:
+  # 테스트에서 백틱 한글 함수명을 허용
+  FunctionNaming:
+    excludes: ['**/test/**']
+
+complexity:
+  # 전역 예외 핸들러는 예외 종류만큼 메서드가 많다
+  TooManyFunctions:
+    excludes: ['**/advice/**', '**/test/**']

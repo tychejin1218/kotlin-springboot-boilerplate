@@ -1,0 +1,24 @@
+# Gradle
+.gradle/
+build/
+!gradle/wrapper/gradle-wrapper.jar
+
+# Kotlin
+.kotlin/
+
+# JetBrains IDE
+.idea/
+*.iml
+out/
+
+# Log files
+logs/
+*.log
+
+# Local settings
+.claude/settings.local.json
+.env
+
+# OS
+.DS_Store
+Thumbs.db

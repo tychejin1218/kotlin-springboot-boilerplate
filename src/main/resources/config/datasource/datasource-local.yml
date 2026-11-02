@@ -1,0 +1,12 @@
+# 로컬 MySQL (docker compose up -d mysql). Java 보일러플레이트(3306)와 동시에 띄울 수 있도록 3307 사용
+main:
+  datasource:
+    writer-jdbc-url: jdbc:mysql://localhost:3307/boilerplate_db?serverTimezone=UTC&characterEncoding=UTF-8
+    reader-jdbc-url: jdbc:mysql://localhost:3307/boilerplate_db?serverTimezone=UTC&characterEncoding=UTF-8
+    username: boilerplate
+    password: boilerplate
+    hikari:
+      maximum-pool-size: 5
+      minimum-idle: 2
+      idle-timeout: 10000
+      max-lifetime: 300000
