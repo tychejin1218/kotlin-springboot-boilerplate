@@ -59,11 +59,13 @@ src/main/kotlin/com/example/api/
 
 | 메서드 | 경로 | 설명 |
 |---|---|---|
-| GET | `/api/todos?page=0&size=10&status=ALL&sort=ID` | 목록 (status: `ALL`/`COMPLETED`/`INCOMPLETE`, sort: `ID`(최신순)/`TITLE`) |
+| GET | `/api/todos?page=0&size=10&status=all&sort=id` | 목록 (status: `all`/`completed`/`incomplete`, sort: `id`(최신순)/`title`) |
 | GET | `/api/todos/{id}` | 단건 |
 | POST | `/api/todos` | 생성 `{"title": "..."}` |
 | PATCH | `/api/todos/{id}/complete` | 완료 처리 |
 | DELETE | `/api/todos/{id}` | 논리 삭제 (`deleted_at`) |
+
+API 규격(경로·파라미터·응답 JSON·응답 코드)은 Java 보일러플레이트와 같게 유지해 `react-boilerplate`를 그대로 붙일 수 있게 한다.
 
 스키마는 `docker/init.sql` 하나로 관리합니다. docker compose 와 Testcontainers 가 같은 파일로 테이블을 만듭니다.
 이미 만들어진 로컬 볼륨에는 자동으로 다시 적용되지 않으므로 DDL 을 추가했다면 직접 실행합니다.

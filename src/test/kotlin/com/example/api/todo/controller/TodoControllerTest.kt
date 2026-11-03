@@ -40,8 +40,8 @@ class TodoControllerTest(
             .get("/todos") {
                 param("page", "1")
                 param("size", "5")
-                param("status", "COMPLETED")
-                param("sort", "TITLE")
+                param("status", "completed")
+                param("sort", "title")
             }.andExpect {
                 status { isOk() }
                 jsonPath("$.statusCode") { value(ApiStatus.OK.code) }
@@ -61,8 +61,31 @@ class TodoControllerTest(
     }
 
     @Test
+    fun `상태 필터와 정렬 값은 대소문자를 구분하지 않는다`() {
+        val request = TodoListRequest(status = TodoStatus.INCOMPLETE, sort = TodoSort.ID)
+        every { todoService.getTodoList(request) } returns PageResponse.of(emptyList(), 0, 0, 10)
+
+        mockMvc
+            .get("/todos") {
+                param("status", "INCOMPLETE")
+                param("sort", "Id")
+            }.andExpect { status { isOk() } }
+
+        verify { todoService.getTodoList(request) }
+    }
+
+    @Test
+    fun `빈 상태 필터는 기본값으로 조회한다`() {
+        every { todoService.getTodoList(TodoListRequest()) } returns PageResponse.of(emptyList(), 0, 0, 10)
+
+        mockMvc.get("/todos") { param("status", "") }.andExpect { status { isOk() } }
+
+        verify { todoService.getTodoList(TodoListRequest()) }
+    }
+
+    @Test
     fun `정의되지 않은 상태 필터는 400 과 기본 메시지로 응답한다`() {
-        mockMvc.get("/todos") { param("status", "UNKNOWN") }.andExpect {
+        mockMvc.get("/todos") { param("status", "unknown") }.andExpect {
             status { isBadRequest() }
             jsonPath("$.statusCode") { value(ApiStatus.METHOD_ARGUMENT_NOT_VALID.code) }
             jsonPath("$.message") { value(ApiStatus.METHOD_ARGUMENT_NOT_VALID.message) }
