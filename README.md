@@ -2,6 +2,8 @@
 
 [springboot-boilerplate](https://github.com/tychejin1218/spring-react-boilerplate)(Java)의 구조를 참고해 Kotlin 컨벤션으로 새로 작성한 Spring Boot API 보일러플레이트
 
+Java 에서 넘어왔다면 [Java 개발자를 위한 Kotlin 가이드](docs/kotlin-for-java-developers.md)를 먼저 읽어보세요.
+
 ## 기술 스택
 
 | 구분 | 내용 |

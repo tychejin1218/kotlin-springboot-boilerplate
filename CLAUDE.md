@@ -27,7 +27,7 @@ Controller → Service → Repository(Spring Data JPA + Kotlin JDSL) → Databas
 
 ## Kotlin 작성 규칙
 
-Java 보일러플레이트에서 넘어올 때 바뀌는 점:
+Java 개발자용 상세 설명은 `docs/kotlin-for-java-developers.md`. Java 보일러플레이트에서 넘어올 때 바뀌는 점:
 
 | Java 보일러플레이트 | 이 프로젝트 |
 |---|---|
