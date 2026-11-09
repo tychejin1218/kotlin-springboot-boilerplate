@@ -29,6 +29,7 @@ enum class ApiStatus(
     PERMISSION_FORBIDDEN(HttpStatus.FORBIDDEN, "허용되지 않은 요청입니다."),
     RESOURCE_DUPLICATED(HttpStatus.CONFLICT, "중복된 요청입니다."),
     RESOURCE_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 정보입니다."),
+    SYSTEM_RATE_LIMIT_EXCEEDED(HttpStatus.TOO_MANY_REQUESTS, "요청 횟수가 초과됐습니다. 잠시 후 다시 시도해주세요."),
 
     // 인증
     AUTH_UNAUTHORIZED(HttpStatus.UNAUTHORIZED, "인증 정보가 유효하지 않습니다. 다시 로그인해주세요."),

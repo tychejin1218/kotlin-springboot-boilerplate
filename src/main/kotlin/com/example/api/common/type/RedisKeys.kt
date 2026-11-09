@@ -29,6 +29,9 @@ enum class RedisKeys(
 
     /** {재설정 토큰} */
     PASSWORD_RESET_TOKEN("AUTH:PASSWORD_RESET", Duration.ofMinutes(30)),
+
+    /** {IP}:{URI} */
+    RATE_LIMIT("RATE_LIMIT", Duration.ofMinutes(1)),
     ;
 
     /** `APP:{path}:{id1}:{id2}...`. null 식별자는 빈 문자열 */
@@ -44,5 +47,8 @@ enum class RedisKeys(
         const val NAMESPACE = "APP"
         const val DELIMITER = ":"
         const val ESCAPED_DELIMITER = "_"
+
+        /** `@Cacheable` 캐시 키 접두사. 실제 키는 `APP:CACHE:{캐시 이름}:{캐시 키}` */
+        const val CACHE_PREFIX = NAMESPACE + DELIMITER + "CACHE" + DELIMITER
     }
 }

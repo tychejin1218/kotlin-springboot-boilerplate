@@ -38,6 +38,12 @@ mail:
   verify-url: ${MAIL_VERIFY_URL:http://localhost:5173/verify-email}
   password-reset-url: ${MAIL_PASSWORD_RESET_URL:http://localhost:5173/password/reset}
 
+# Rate Limit (로그인, 회원가입에 IP·경로별 분당 요청 수 제한)
+rate-limit:
+  max-requests-per-minute: 10
+  # true 이면 X-Forwarded-For 첫 값을 클라이언트 IP 로 쓴다. 신뢰할 수 있는 리버스 프록시(ALB, nginx) 뒤에서만 켠다
+  trust-forwarded-headers: ${RATE_LIMIT_TRUST_FORWARDED_HEADERS:false}
+
 # 세션 만료 정책. access-token-validity-ms(environment-{profile}.yml)는 session-idle-timeout-ms 보다 짧아야 한다
 jwt:
   session-idle-timeout-ms: ${JWT_SESSION_IDLE_TIMEOUT_MS:1800000}          # 미활동 만료 30분

@@ -49,6 +49,8 @@ abstract class IntegrationTest {
             registry.add("main.datasource.password", mysql::getPassword)
             registry.add("spring.data.redis.host", redis::getHost)
             registry.add("spring.data.redis.port") { redis.getMappedPort(REDIS_PORT) }
+            // 모든 테스트가 같은 IP 로 로그인하므로 Rate Limit 에 걸리지 않게 늘린다 (RateLimitTest 는 따로 확인)
+            registry.add("rate-limit.max-requests-per-minute") { 10_000 }
         }
 
         private const val REDIS_PORT = 6379

@@ -1,5 +1,8 @@
 package com.example.api.config
 
+import com.example.api.common.component.RedisComponent
+import com.example.api.config.web.RateLimitInterceptor
+import com.example.api.config.web.RateLimitProperties
 import com.example.api.config.web.TraceIdFilter
 import org.springframework.boot.context.properties.ConfigurationProperties
 import org.springframework.boot.context.properties.EnableConfigurationProperties
@@ -8,7 +11,9 @@ import org.springframework.core.convert.converter.Converter
 import org.springframework.core.convert.converter.ConverterFactory
 import org.springframework.format.FormatterRegistry
 import org.springframework.web.servlet.config.annotation.CorsRegistry
+import org.springframework.web.servlet.config.annotation.InterceptorRegistry
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer
+import tools.jackson.databind.ObjectMapper
 
 /**
  * CORS 설정 (`cors.*`)
@@ -24,14 +29,24 @@ data class CorsProperties(
  * Spring MVC 설정
  *
  * CORS 는 MVC 설정으로 등록한다. Spring Security 를 붙여도 `cors { }` 가 이 설정을 그대로 쓴다.
+ * Rate Limit 은 무차별 대입·대량 가입을 막기 위해 로그인·회원가입에만 건다.
  */
 @Configuration(proxyBeanMethods = false)
-@EnableConfigurationProperties(CorsProperties::class)
+@EnableConfigurationProperties(CorsProperties::class, RateLimitProperties::class)
 class WebConfig(
     private val corsProperties: CorsProperties,
+    private val rateLimitProperties: RateLimitProperties,
+    private val redisComponent: RedisComponent,
+    private val objectMapper: ObjectMapper,
 ) : WebMvcConfigurer {
     override fun addFormatters(registry: FormatterRegistry) {
         registry.addConverterFactory(CaseInsensitiveEnumConverterFactory())
+    }
+
+    override fun addInterceptors(registry: InterceptorRegistry) {
+        registry
+            .addInterceptor(RateLimitInterceptor(redisComponent, objectMapper, rateLimitProperties))
+            .addPathPatterns("/auth/login", "/auth/register")
     }
 
     override fun addCorsMappings(registry: CorsRegistry) {

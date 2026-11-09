@@ -1,0 +1,72 @@
+package com.example.api.todo.service
+
+import com.example.api.common.type.RedisKeys
+import com.example.api.config.CacheConfig
+import com.example.api.domain.entity.Member
+import com.example.api.domain.repository.MemberRepository
+import com.example.api.support.IntegrationTest
+import com.example.api.todo.dto.TodoCreateRequest
+import com.example.api.todo.dto.TodoListRequest
+import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Test
+import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.data.redis.core.StringRedisTemplate
+import org.springframework.jdbc.core.JdbcTemplate
+import java.util.UUID
+
+/**
+ * 할 일 목록 캐시를 실제 Redis 로 확인한다 (직렬화·역직렬화, 키 형식, 무효화)
+ */
+class TodoServiceCacheTest(
+    @Autowired private val todoService: TodoService,
+    @Autowired private val memberRepository: MemberRepository,
+    @Autowired private val redisTemplate: StringRedisTemplate,
+    @Autowired private val jdbcTemplate: JdbcTemplate,
+) : IntegrationTest() {
+    private val email = "cache-${UUID.randomUUID()}@test.com"
+    private val cachePattern = "${RedisKeys.CACHE_PREFIX}${CacheConfig.TODO_LIST}:*"
+
+    @BeforeEach
+    fun setUp() {
+        redisTemplate.delete(redisTemplate.keys(cachePattern))
+        memberRepository.save(Member(email = email, name = "캐시", password = "x"))
+        todoService.insertTodo(email, TodoCreateRequest("캐시할 일"))
+    }
+
+    @Test
+    fun `목록을 캐시해 두 번째 조회는 DB 를 바꿔도 캐시된 값을 돌려준다`() {
+        val first = todoService.getTodoList(email, TodoListRequest())
+        jdbcTemplate.update("UPDATE todo SET title = '바뀐 제목' WHERE title = '캐시할 일'")
+
+        val second = todoService.getTodoList(email, TodoListRequest())
+
+        assertThat(second).isEqualTo(first)
+        assertThat(second.content.single().title).isEqualTo("캐시할 일")
+    }
+
+    @Test
+    fun `캐시 키는 APP CACHE 접두사를 쓰고 이메일을 그대로 담지 않는다`() {
+        todoService.getTodoList(email, TodoListRequest())
+
+        val keys = redisTemplate.keys(cachePattern)
+        assertThat(keys).hasSize(1)
+        assertThat(keys.single()).doesNotContain(email).endsWith(":0:10:ALL:ID")
+    }
+
+    @Test
+    fun `할 일을 바꾸면 목록 캐시를 비운다`() {
+        val before = todoService.getTodoList(email, TodoListRequest())
+
+        todoService.updateTodoComplete(email, before.content.single().id)
+
+        assertThat(redisTemplate.keys(cachePattern)).isEmpty()
+        assertThat(
+            todoService
+                .getTodoList(email, TodoListRequest())
+                .content
+                .single()
+                .completed,
+        ).isTrue()
+    }
+}

@@ -55,6 +55,7 @@ CORS 허용 오리진은 `CORS_ALLOWED_ORIGINS`(쉼표 구분)로 주입합니�
 | `JWT_ACCESS_TOKEN_VALIDITY_MS` | Access 토큰 유효 기간. 미활동 만료보다 짧아야 함 | 900000 (15분) |
 | `JWT_SESSION_IDLE_TIMEOUT_MS` | 미활동 만료. Refresh 토큰 Redis TTL, 재발급마다 연장 | 1800000 (30분) |
 | `JWT_SESSION_ABSOLUTE_TIMEOUT_MS` | 최초 로그인 기준 절대 만료 | 43200000 (12시간) |
+| `RATE_LIMIT_TRUST_FORWARDED_HEADERS` | X-Forwarded-For 를 클라이언트 IP 로 사용 (신뢰할 수 있는 프록시 뒤에서만) | false |
 
 ## 구조
 
@@ -73,8 +74,9 @@ src/main/kotlin/com/example/api/
 │   │                 AsyncConfig (MDC 전파), OpenApiConfig (Swagger 그룹)
 │   ├── jwt/          JwtTokenProvider, JwtProperties
 │   ├── redis/        RedisConfig (클러스터 Replica 읽기)
+│   ├── CacheConfig   Redis 캐시 (APP:CACHE:{캐시 이름}:{키}, 즉시 쓰기)
 │   ├── security/     SecurityConfig, JwtAuthenticationFilter
-│   └── web/          TraceIdFilter (X-Trace-Id, MDC), LoggingFilter (요청 요약 로그)
+│   └── web/          TraceIdFilter (X-Trace-Id, MDC), LoggingFilter (요청 요약 로그), RateLimitInterceptor
 ├── domain/
 │   ├── entity/       BaseAudit (created_at/updated_at/deleted_at), Member, Todo
 │   └── repository/   MemberRepository, TodoRepository (JpaRepository + KotlinJdslJpqlExecutor)
@@ -109,6 +111,9 @@ src/main/kotlin/com/example/api/
 | PATCH | `/api/todos/{id}/complete` | 완료 처리 | O |
 | DELETE | `/api/todos/{id}` | 논리 삭제 (`deleted_at`) | O |
 
+- 할 일 목록은 Redis 에 30분 캐시하고, 할 일을 바꾸면 목록 캐시를 비웁니다.
+- 로그인·회원가입은 IP·경로마다 분당 10회로 제한하고, 넘으면 429 `SYSTEM_RATE_LIMIT_EXCEEDED` 로 응답합니다.
+
 API 규격(경로·파라미터·응답 JSON·응답 코드)은 Java 보일러플레이트와 같게 유지해 `react-boilerplate`를 그대로 붙일 수 있게 한다.
 응답 본문은 `{"statusCode": "OK", "message": "성공", "data": ...}` 형태이며, 오류 시 `statusCode` 에 `ApiStatus` enum 이름(`TODO_NOT_FOUND` 등)이 들어갑니다.
 
@@ -126,6 +131,6 @@ docker exec -i kotlin-boilerplate-mysql mysql -uroot -proot < docker/init.sql
 3. ~~응답 코드를 Java 와 같은 `ApiStatus` enum 이름으로 통일~~
 4. ~~웹 공통: 추적 ID, 요청 로그, CORS, SpringDoc, 비동기 MDC 전파~~
 5. ~~인증: Member, Spring Security, JWT, Redis, 메일~~
-6. 캐시, Rate Limit
+6. ~~캐시, Rate Limit~~
 7. 예제: 파일 업로드(S3), 알림(SSE), 관리자 API
 8. 운영: Jasypt, Dockerfile, 모니터링
