@@ -7,11 +7,13 @@ import com.example.api.todo.dto.TodoCreateRequest
 import com.example.api.todo.dto.TodoListRequest
 import com.example.api.todo.dto.TodoResponse
 import io.swagger.v3.oas.annotations.Operation
+import io.swagger.v3.oas.annotations.Parameter
 import io.swagger.v3.oas.annotations.media.Content
 import io.swagger.v3.oas.annotations.media.ExampleObject
 import io.swagger.v3.oas.annotations.media.Schema
 import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.tags.Tag
+import org.springframework.security.core.Authentication
 
 /**
  * 할 일 API 문서 (Swagger 어노테이션)
@@ -20,7 +22,7 @@ import io.swagger.v3.oas.annotations.tags.Tag
  */
 @Tag(name = "할 일", description = "할 일 목록 조회/추가/완료/삭제 API")
 interface TodoControllerDocs {
-    @Operation(summary = "할 일 목록 조회", description = "할 일 목록을 페이지 단위로 조회합니다.")
+    @Operation(summary = "할 일 목록 조회", description = "로그인한 회원의 할 일 목록을 페이지 단위로 조회합니다.")
     @ApiResponse(
         responseCode = "200",
         description = "조회 성공",
@@ -55,7 +57,10 @@ interface TodoControllerDocs {
         description = "파라미터 오류",
         content = [Content(schema = Schema(implementation = ErrorResponse::class))],
     )
-    fun getTodoList(request: TodoListRequest): BaseResponse<PageResponse<TodoResponse>>
+    fun getTodoList(
+        @Parameter(hidden = true) authentication: Authentication,
+        request: TodoListRequest,
+    ): BaseResponse<PageResponse<TodoResponse>>
 
     @Operation(summary = "할 일 단건 조회")
     @ApiResponse(responseCode = "200", description = "조회 성공")
@@ -64,7 +69,10 @@ interface TodoControllerDocs {
         description = "TODO_NOT_FOUND",
         content = [Content(schema = Schema(implementation = ErrorResponse::class))],
     )
-    fun getTodo(id: Long): BaseResponse<TodoResponse>
+    fun getTodo(
+        @Parameter(hidden = true) authentication: Authentication,
+        id: Long,
+    ): BaseResponse<TodoResponse>
 
     @Operation(summary = "할 일 추가")
     @ApiResponse(responseCode = "200", description = "추가 성공")
@@ -73,7 +81,10 @@ interface TodoControllerDocs {
         description = "VALIDATION_METHOD_ARGUMENT_INVALID (message 에 검증 메시지)",
         content = [Content(schema = Schema(implementation = ErrorResponse::class))],
     )
-    fun insertTodo(request: TodoCreateRequest): BaseResponse<TodoResponse>
+    fun insertTodo(
+        @Parameter(hidden = true) authentication: Authentication,
+        request: TodoCreateRequest,
+    ): BaseResponse<TodoResponse>
 
     @Operation(summary = "할 일 완료 처리", description = "할 일을 완료 상태로 바꿉니다.")
     @ApiResponse(responseCode = "200", description = "완료 처리 성공")
@@ -82,7 +93,10 @@ interface TodoControllerDocs {
         description = "TODO_NOT_FOUND",
         content = [Content(schema = Schema(implementation = ErrorResponse::class))],
     )
-    fun updateTodoComplete(id: Long): BaseResponse<TodoResponse>
+    fun updateTodoComplete(
+        @Parameter(hidden = true) authentication: Authentication,
+        id: Long,
+    ): BaseResponse<TodoResponse>
 
     @Operation(summary = "할 일 삭제", description = "할 일을 논리 삭제합니다.")
     @ApiResponse(responseCode = "200", description = "삭제 성공")
@@ -91,5 +105,8 @@ interface TodoControllerDocs {
         description = "TODO_NOT_FOUND",
         content = [Content(schema = Schema(implementation = ErrorResponse::class))],
     )
-    fun deleteTodo(id: Long): BaseResponse<Unit>
+    fun deleteTodo(
+        @Parameter(hidden = true) authentication: Authentication,
+        id: Long,
+    ): BaseResponse<Unit>
 }

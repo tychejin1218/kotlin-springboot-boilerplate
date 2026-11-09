@@ -2,6 +2,7 @@ package com.example.api.common.controller
 
 import com.example.api.common.type.ApiStatus
 import com.example.api.config.web.TraceIdFilter
+import com.example.api.support.ImportSecurityConfig
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest
@@ -11,6 +12,7 @@ import org.springframework.test.web.servlet.get
 import org.springframework.test.web.servlet.options
 
 @WebMvcTest(HealthController::class)
+@ImportSecurityConfig
 class HealthControllerTest(
     @Autowired private val mockMvc: MockMvc,
 ) {

@@ -30,6 +30,21 @@ enum class ApiStatus(
     RESOURCE_DUPLICATED(HttpStatus.CONFLICT, "중복된 요청입니다."),
     RESOURCE_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 정보입니다."),
 
+    // 인증
+    AUTH_UNAUTHORIZED(HttpStatus.UNAUTHORIZED, "인증 정보가 유효하지 않습니다. 다시 로그인해주세요."),
+
+    // 이메일이 없을 때와 비밀번호가 틀렸을 때 같은 코드를 써서 가입 여부를 드러내지 않는다
+    AUTH_LOGIN_FAILED(HttpStatus.UNAUTHORIZED, "이메일 또는 비밀번호가 올바르지 않습니다."),
+    AUTH_EMAIL_NOT_VERIFIED(HttpStatus.FORBIDDEN, "이메일 인증 후 로그인할 수 있습니다."),
+    AUTH_EMAIL_ALREADY_VERIFIED(HttpStatus.BAD_REQUEST, "이미 인증된 이메일입니다."),
+    AUTH_VERIFY_TOKEN_INVALID(HttpStatus.BAD_REQUEST, "인증 링크가 만료되었거나 유효하지 않습니다."),
+    AUTH_PASSWORD_RESET_TOKEN_INVALID(HttpStatus.BAD_REQUEST, "비밀번호 재설정 링크가 만료되었거나 유효하지 않습니다."),
+    AUTH_REFRESH_TOKEN_INVALID(HttpStatus.UNAUTHORIZED, "세션이 만료되었습니다. 다시 로그인해주세요."),
+
+    // 회원
+    MEMBER_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 회원입니다."),
+    MEMBER_EMAIL_DUPLICATED(HttpStatus.CONFLICT, "이미 가입된 이메일입니다."),
+
     // 할 일
     TODO_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 할 일입니다."),
 

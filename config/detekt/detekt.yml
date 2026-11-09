@@ -8,6 +8,9 @@ style:
     ignoreEnums: true
 
 naming:
+  # {기능}/dto/XxxDto.kt 에는 DTO 여러 개나 DTO 하나와 변환 확장 함수를 함께 둔다
+  MatchingDeclarationName:
+    excludes: ['**/dto/**']
   # 테스트에서 백틱 한글 함수명을 허용
   FunctionNaming:
     excludes: ['**/test/**']

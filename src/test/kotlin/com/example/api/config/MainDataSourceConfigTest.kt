@@ -1,6 +1,6 @@
 package com.example.api.config
 
-import com.example.api.support.MySqlContainerTest
+import com.example.api.support.IntegrationTest
 import com.zaxxer.hikari.HikariDataSource
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
@@ -17,7 +17,7 @@ class MainDataSourceConfigTest
         private val jdbcTemplate: JdbcTemplate,
         @Qualifier("writerDataSource") private val writer: HikariDataSource,
         @Qualifier("readerDataSource") private val reader: HikariDataSource,
-    ) : MySqlContainerTest() {
+    ) : IntegrationTest() {
         @Test
         fun `readOnly 트랜잭션은 Reader 풀의 커넥션을 사용한다`() {
             transaction(readOnly = true) {

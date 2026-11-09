@@ -1,14 +1,15 @@
 package com.example.api.domain.repository
 
+import com.example.api.domain.entity.Member
 import com.example.api.domain.entity.Todo
-import com.example.api.support.MySqlContainerTest
+import com.example.api.support.IntegrationTest
 import jakarta.persistence.EntityManager
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort
-import org.springframework.data.repository.findByIdOrNull
 import org.springframework.jdbc.core.JdbcTemplate
 import org.springframework.transaction.annotation.Transactional
 
@@ -16,15 +17,26 @@ import org.springframework.transaction.annotation.Transactional
 @Transactional
 class TodoRepositoryTest(
     @Autowired private val todoRepository: TodoRepository,
+    @Autowired private val memberRepository: MemberRepository,
     @Autowired private val entityManager: EntityManager,
     @Autowired private val jdbcTemplate: JdbcTemplate,
-) : MySqlContainerTest() {
-    @Test
-    fun `완료 여부로 거르고 Pageable 의 정렬과 페이지를 적용한다`() {
-        saveTodos("다", "가", "나", "라")
-        todoRepository.save(Todo(title = "완료").apply { complete() })
+) : IntegrationTest() {
+    private lateinit var owner: Member
+    private lateinit var other: Member
 
-        val page = todoRepository.findTodoPage(false, PageRequest.of(0, 3, Sort.by("title")))
+    @BeforeEach
+    fun setUp() {
+        owner = memberRepository.save(Member(email = "owner@test.com", name = "소유자", password = "x"))
+        other = memberRepository.save(Member(email = "other@test.com", name = "다른 회원", password = "x"))
+    }
+
+    @Test
+    fun `소유 회원과 완료 여부로 거르고 Pageable 의 정렬과 페이지를 적용한다`() {
+        saveTodos(owner, "다", "가", "나", "라")
+        saveTodos(other, "남의 할 일")
+        todoRepository.save(Todo(title = "완료", member = owner).apply { complete() })
+
+        val page = todoRepository.findTodoPage(OWNER_EMAIL, false, PageRequest.of(0, 3, Sort.by("title")))
 
         assertThat(page.content.map { it.title }).containsExactly("가", "나", "다")
         assertThat(page.totalElements).isEqualTo(4)
@@ -32,31 +44,46 @@ class TodoRepositoryTest(
     }
 
     @Test
-    fun `완료 여부가 null 이면 전체를 조회한다`() {
-        saveTodos("a", "b")
-        todoRepository.save(Todo(title = "c").apply { complete() })
+    fun `완료 여부가 null 이면 소유한 할 일 전체를 id 역순으로 조회한다`() {
+        val todos = saveTodos(owner, "a", "b")
+        todoRepository.save(Todo(title = "c", member = owner).apply { complete() })
+        saveTodos(other, "남의 할 일")
 
-        val page = todoRepository.findTodoPage(null, PageRequest.of(0, 10))
+        val page =
+            todoRepository.findTodoPage(
+                OWNER_EMAIL,
+                null,
+                PageRequest.of(0, 10, Sort.by(Sort.Direction.DESC, "id")),
+            )
 
         assertThat(page.totalElements).isEqualTo(3)
+        assertThat(page.content.last().id).isEqualTo(todos.first().id)
+    }
+
+    @Test
+    fun `다른 회원의 할 일은 단건 조회되지 않는다`() {
+        val (todo) = saveTodos(other, "남의 할 일")
+
+        assertThat(todoRepository.findByIdAndMemberEmail(checkNotNull(todo.id), OWNER_EMAIL)).isNull()
+        assertThat(todoRepository.findByIdAndMemberEmail(checkNotNull(todo.id), "other@test.com")).isNotNull()
     }
 
     @Test
     fun `논리 삭제된 할 일은 목록과 단건 조회에서 제외된다`() {
-        val (kept, deleted) = saveTodos("남김", "삭제")
+        val (kept, deleted) = saveTodos(owner, "남김", "삭제")
         deleted.softDelete()
         entityManager.flush()
         entityManager.clear()
 
-        val page = todoRepository.findTodoPage(null, PageRequest.of(0, 10))
+        val page = todoRepository.findTodoPage(OWNER_EMAIL, null, PageRequest.of(0, 10))
 
         assertThat(page.content.map { it.id }).containsExactly(kept.id)
-        assertThat(todoRepository.findByIdOrNull(checkNotNull(deleted.id))).isNull()
+        assertThat(todoRepository.findByIdAndMemberEmail(checkNotNull(deleted.id), OWNER_EMAIL)).isNull()
     }
 
     @Test
     fun `저장하면 감사 컬럼이 채워진다`() {
-        val todo = todoRepository.saveAndFlush(Todo(title = "감사"))
+        val todo = todoRepository.saveAndFlush(Todo(title = "감사", member = owner))
 
         assertThat(todo.createdAt).isNotNull()
         assertThat(todo.updatedAt).isNotNull()
@@ -64,7 +91,7 @@ class TodoRepositoryTest(
 
     @Test
     fun `감사 컬럼은 JVM 시간대와 관계없이 UTC 로 저장된다`() {
-        val todo = todoRepository.saveAndFlush(Todo(title = "UTC"))
+        val todo = todoRepository.saveAndFlush(Todo(title = "UTC", member = owner))
 
         val diffSeconds =
             jdbcTemplate.queryForObject(
@@ -76,5 +103,12 @@ class TodoRepositoryTest(
         assertThat(diffSeconds).isBetween(-60L, 60L)
     }
 
-    private fun saveTodos(vararg titles: String): List<Todo> = todoRepository.saveAll(titles.map { Todo(title = it) })
+    private fun saveTodos(
+        member: Member,
+        vararg titles: String,
+    ): List<Todo> = todoRepository.saveAll(titles.map { Todo(title = it, member = member) })
+
+    companion object {
+        private const val OWNER_EMAIL = "owner@test.com"
+    }
 }

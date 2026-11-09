@@ -1,6 +1,6 @@
 package com.example.api.config
 
-import com.example.api.support.MySqlContainerTest
+import com.example.api.support.IntegrationTest
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
@@ -10,7 +10,7 @@ import org.springframework.test.web.servlet.get
 @AutoConfigureMockMvc
 class OpenApiConfigTest(
     @Autowired private val mockMvc: MockMvc,
-) : MySqlContainerTest() {
+) : IntegrationTest() {
     @Test
     fun `local 프로파일에서는 할 일 API 문서를 제공한다`() {
         mockMvc.get("/api-docs/할 일 API").andExpect {

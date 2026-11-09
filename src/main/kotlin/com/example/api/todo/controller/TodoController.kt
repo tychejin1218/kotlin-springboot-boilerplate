@@ -8,6 +8,7 @@ import com.example.api.todo.dto.TodoResponse
 import com.example.api.todo.service.TodoService
 import jakarta.validation.Valid
 import org.springdoc.core.annotations.ParameterObject
+import org.springframework.security.core.Authentication
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.ModelAttribute
@@ -28,29 +29,34 @@ class TodoController(
 ) : TodoControllerDocs {
     @GetMapping
     override fun getTodoList(
+        authentication: Authentication,
         @Valid @ParameterObject @ModelAttribute request: TodoListRequest,
-    ): BaseResponse<PageResponse<TodoResponse>> = BaseResponse.ok(todoService.getTodoList(request))
+    ): BaseResponse<PageResponse<TodoResponse>> = BaseResponse.ok(todoService.getTodoList(authentication.name, request))
 
     @GetMapping("/{id}")
     override fun getTodo(
+        authentication: Authentication,
         @PathVariable id: Long,
-    ): BaseResponse<TodoResponse> = BaseResponse.ok(todoService.getTodo(id))
+    ): BaseResponse<TodoResponse> = BaseResponse.ok(todoService.getTodo(authentication.name, id))
 
     @PostMapping
     override fun insertTodo(
+        authentication: Authentication,
         @Valid @RequestBody request: TodoCreateRequest,
-    ): BaseResponse<TodoResponse> = BaseResponse.ok(todoService.insertTodo(request))
+    ): BaseResponse<TodoResponse> = BaseResponse.ok(todoService.insertTodo(authentication.name, request))
 
     @PatchMapping("/{id}/complete")
     override fun updateTodoComplete(
+        authentication: Authentication,
         @PathVariable id: Long,
-    ): BaseResponse<TodoResponse> = BaseResponse.ok(todoService.updateTodoComplete(id))
+    ): BaseResponse<TodoResponse> = BaseResponse.ok(todoService.updateTodoComplete(authentication.name, id))
 
     @DeleteMapping("/{id}")
     override fun deleteTodo(
+        authentication: Authentication,
         @PathVariable id: Long,
     ): BaseResponse<Unit> {
-        todoService.deleteTodo(id)
+        todoService.deleteTodo(authentication.name, id)
         return BaseResponse.ok()
     }
 }

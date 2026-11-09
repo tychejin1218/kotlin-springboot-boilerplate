@@ -8,6 +8,7 @@ import jakarta.validation.ConstraintViolationException
 import org.slf4j.LoggerFactory
 import org.springframework.http.ResponseEntity
 import org.springframework.http.converter.HttpMessageNotReadableException
+import org.springframework.security.access.AccessDeniedException
 import org.springframework.web.HttpMediaTypeNotSupportedException
 import org.springframework.web.HttpRequestMethodNotSupportedException
 import org.springframework.web.bind.MethodArgumentNotValidException
@@ -73,6 +74,16 @@ class ExceptionAdvice {
             }
         log.warn("{}: {} {} - {}", ex.javaClass.simpleName, request.method, request.requestURI, ex.message)
         return respond(apiStatus, request, validationMessage(ex))
+    }
+
+    /**
+     * 메서드 수준 권한 거부(`@PreAuthorize`). URL 수준 거부는 SecurityConfig 의 accessDeniedHandler 가 처리하지만
+     * `@PreAuthorize` 는 컨트롤러 메서드를 호출할 때 검사해서 예외가 여기로 온다. 처리하지 않으면 500 이 된다
+     */
+    @ExceptionHandler(AccessDeniedException::class)
+    fun handleAccessDenied(request: HttpServletRequest): ResponseEntity<ErrorResponse> {
+        log.warn("AccessDeniedException: {} {}", request.method, request.requestURI)
+        return respond(ApiStatus.PERMISSION_FORBIDDEN, request)
     }
 
     @ExceptionHandler(Exception::class)

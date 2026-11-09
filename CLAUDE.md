@@ -11,7 +11,7 @@ Spring Boot API 보일러플레이트 (Kotlin). 구조는 Java 버전 `spring-re
 ./gradlew build          # 컴파일 + ktlint + detekt + 테스트
 ./gradlew ktlintFormat   # 포맷 자동 정렬 (코드 수정 후 항상 실행)
 ./gradlew test           # Testcontainers 사용, Docker 필요
-docker compose up -d mysql && ./gradlew bootRun   # :9091, context-path /api
+docker compose up -d && ./gradlew bootRun   # MySQL·Redis·MailHog, :9091, context-path /api
 ```
 
 ## 아키텍처
@@ -54,6 +54,14 @@ Java 보일러플레이트에서 넘어올 때 바뀌는 점:
 - 프로파일별 설정: DataSource 는 `config/datasource/`, 그 밖의 환경 설정은 `config/environment/environment-{profile}.yml`
 - 요청 DTO 검증: `@field:` 없이 `@NotBlank(message = "...")` 사용 (`-Xannotation-default-target=param-property`, start.spring.io 기본값). 메시지는 오류 응답에 그대로 노출된다
 
+### 인증 / Redis
+
+- 인증 principal 은 이메일이다. 컨트롤러는 `authentication: Authentication` 을 받아 `authentication.name` 을 서비스에 넘긴다(Docs 인터페이스에서는 `@Parameter(hidden = true)`)
+- 인증 없이 열 경로는 `SecurityConfig.PERMIT_ALL_PATTERNS` 에 추가한다. 401/403 은 `ErrorResponse` JSON(`AUTH_UNAUTHORIZED`, `PERMISSION_FORBIDDEN`)
+- 소유자가 있는 데이터는 Repository 조건에 회원 이메일을 넣고, 남의 데이터는 `*_NOT_FOUND` 로 응답한다(존재 여부를 드러내지 않는다)
+- Redis 키는 `RedisKeys.XXX.key(식별자...)` 로만 만든다. 식별자에는 이메일 대신 회원 번호를 쓴다. 연산은 `RedisComponent`(장애 시 예외 대신 null/false)
+- 로그에 이메일 같은 개인정보를 남기지 않는다. 회원은 MDC `memberId` 로 식별된다
+
 ### JPA Entity
 
 - `data class` 금지 (equals/hashCode/toString이 연관관계·프록시와 충돌)
@@ -89,7 +97,8 @@ interface TodoRepository : JpaRepository<Todo, Long>, KotlinJdslJpqlExecutor {
 ## 테스트
 
 - 함수명은 백틱 한글 문장 (`` fun `존재하지 않는 ID 면 404 를 반환한다`() ``), `@DisplayName` 불필요
-- 컨트롤러: `@WebMvcTest` + `@MockkBean` + MockMvc Kotlin DSL (`mockMvc.get("/x").andExpect { ... }`)
+- 컨트롤러: `@WebMvcTest` + `@ImportSecurityConfig`(실제 보안 설정 적용) + `@MockkBean` + MockMvc Kotlin DSL (`mockMvc.get("/x").andExpect { ... }`). 인증된 요청은 `@WithMockUser(username = "이메일")`
 - 서비스 단위: MockK. 엔티티 ID 는 `ReflectionTestUtils.setField(todo, "id", 1L)`로 넣는다
-- Repository·DB 통합: `support/MySqlContainerTest` 상속 + 클래스에 `@Transactional`(테스트마다 롤백) (Testcontainers MySQL, Docker 없으면 건너뜀)
+- Repository·DB·Redis 통합: `support/IntegrationTest` 상속 (Testcontainers MySQL + Redis, Docker 없으면 건너뜀). DB 만 쓰는 테스트는 클래스에 `@Transactional`(테스트마다 롤백). 메일은 베이스의 `emailService` 목으로 확인한다
+- 여러 API 를 잇는 흐름(가입 → 인증 → 로그인 등)은 `@AutoConfigureMockMvc` + `IntegrationTest` 로 실제 MySQL·Redis 에 요청한다 (`auth/AuthFlowTest`)
 - `@SpringBootTest`에서 실제 DB 데이터에 의존하는 단정 금지 — 테스트 안에서 데이터를 만든다

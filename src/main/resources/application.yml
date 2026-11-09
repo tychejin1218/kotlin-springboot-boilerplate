@@ -32,6 +32,17 @@ spring:
       stg: profiles-stg, logging-type-file-absolute, logging-level-stg
       prd: profiles-prd, logging-type-file-absolute, logging-level-prd
 
+# 메일 내용 (SMTP 접속은 spring.mail.*). 링크 경로는 FE 라우트(react-boilerplate/src/app/router/router.tsx)와 같아야 한다
+mail:
+  from: ${MAIL_FROM:noreply@example.com}
+  verify-url: ${MAIL_VERIFY_URL:http://localhost:5173/verify-email}
+  password-reset-url: ${MAIL_PASSWORD_RESET_URL:http://localhost:5173/password/reset}
+
+# 세션 만료 정책. access-token-validity-ms(environment-{profile}.yml)는 session-idle-timeout-ms 보다 짧아야 한다
+jwt:
+  session-idle-timeout-ms: ${JWT_SESSION_IDLE_TIMEOUT_MS:1800000}          # 미활동 만료 30분
+  session-absolute-timeout-ms: ${JWT_SESSION_ABSOLUTE_TIMEOUT_MS:43200000} # 최초 로그인 기준 절대 만료 12시간
+
 # Actuator 설정
 management:
   endpoints:

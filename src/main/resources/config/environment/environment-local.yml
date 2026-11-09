@@ -15,3 +15,20 @@ springdoc:
     operations-sorter: alpha
     display-request-duration: true
     doc-expansion: none
+
+# JWT (로컬 전용 키. dev/stg/prd 는 JWT_SECRET 환경변수로 주입)
+jwt:
+  secret: local-jwt-secret-key-must-be-at-least-256-bits-long-for-hs256
+  access-token-validity-ms: 900000  # 15분
+
+spring:
+  # Redis (docker compose up -d redis). Java 보일러플레이트(6379)와 동시에 띄울 수 있도록 6380
+  data:
+    redis:
+      host: localhost
+      port: 6380
+      timeout: 3s
+  # MailHog (http://localhost:8026 에서 받은 메일 확인). Java 보일러플레이트(1025)와 겹치지 않게 1026
+  mail:
+    host: localhost
+    port: 1026

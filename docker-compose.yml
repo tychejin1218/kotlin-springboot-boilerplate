@@ -1,3 +1,4 @@
+# Java 보일러플레이트 compose 와 동시에 띄울 수 있도록 호스트 포트를 한 칸씩 비켜 둔다
 services:
   mysql:
     image: mysql:8.0
@@ -8,11 +9,27 @@ services:
       MYSQL_USER: boilerplate
       MYSQL_PASSWORD: boilerplate
     ports:
-      - "3307:3306"  # Java 보일러플레이트 MySQL(3306)과 충돌하지 않도록 3307
+      - "3307:3306"
     volumes:
       - mysql_data:/var/lib/mysql
       - ./docker/init.sql:/docker-entrypoint-initdb.d/init.sql  # 최초 실행 시에만 적용
     command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
 
+  redis:
+    image: redis:7.0
+    container_name: kotlin-boilerplate-redis
+    ports:
+      - "6380:6379"
+    volumes:
+      - redis_data:/data
+
+  mailhog:
+    image: mailhog/mailhog
+    container_name: kotlin-boilerplate-mailhog
+    ports:
+      - "1026:1025"  # SMTP
+      - "8026:8025"  # 웹 UI (http://localhost:8026)
+
 volumes:
   mysql_data:
+  redis_data:

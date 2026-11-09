@@ -15,3 +15,29 @@ springdoc:
     operations-sorter: alpha
     display-request-duration: true
     doc-expansion: none
+
+# JWT
+jwt:
+  secret: ${JWT_SECRET}
+  access-token-validity-ms: ${JWT_ACCESS_TOKEN_VALIDITY_MS:900000}  # 15분
+
+spring:
+  # Redis 클러스터 (예: node1:6379,node2:6379)
+  data:
+    redis:
+      cluster:
+        nodes: ${REDIS_CLUSTER_NODES}
+      timeout: 3s
+      lettuce:
+        cluster:
+          refresh:
+            adaptive: true
+            period: 60s
+  mail:
+    host: ${MAIL_HOST}
+    port: ${MAIL_PORT:587}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
+    properties:
+      mail.smtp.auth: ${MAIL_SMTP_AUTH:true}
+      mail.smtp.starttls.enable: ${MAIL_SMTP_STARTTLS:true}
