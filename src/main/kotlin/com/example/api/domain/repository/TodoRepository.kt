@@ -11,9 +11,9 @@ interface TodoRepository :
     JpaRepository<Todo, Long>,
     KotlinJdslJpqlExecutor {
     /** 회원이 소유한 할 일 단건. 다른 회원의 할 일이면 null */
-    fun findByIdAndMemberEmail(
+    fun findByIdAndMemberId(
         id: Long,
-        email: String,
+        memberId: Long,
     ): Todo?
 
     /**
@@ -23,7 +23,7 @@ interface TodoRepository :
      * @param pageable 페이지·정렬 (정렬은 Kotlin JDSL 이 JPQL 에 붙인다)
      */
     fun findTodoPage(
-        email: String,
+        memberId: Long,
         completed: Boolean?,
         pageable: Pageable,
     ): Page<Todo> =
@@ -31,7 +31,7 @@ interface TodoRepository :
             select(entity(Todo::class))
                 .from(entity(Todo::class))
                 .whereAnd(
-                    path(Todo::member).path(Member::email).eq(email),
+                    path(Todo::member).path(Member::id).eq(memberId),
                     completed?.let { path(Todo::completed).eq(it) },
                 )
         }

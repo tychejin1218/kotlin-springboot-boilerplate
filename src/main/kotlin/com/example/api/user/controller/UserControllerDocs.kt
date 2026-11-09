@@ -2,6 +2,7 @@ package com.example.api.user.controller
 
 import com.example.api.common.response.BaseResponse
 import com.example.api.common.response.ErrorResponse
+import com.example.api.config.security.LoginMember
 import com.example.api.user.dto.MeResponse
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.Parameter
@@ -9,7 +10,6 @@ import io.swagger.v3.oas.annotations.media.Content
 import io.swagger.v3.oas.annotations.media.Schema
 import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.tags.Tag
-import org.springframework.security.core.Authentication
 
 /**
  * 회원 API 문서
@@ -24,6 +24,6 @@ interface UserControllerDocs {
         content = [Content(schema = Schema(implementation = ErrorResponse::class))],
     )
     fun getMe(
-        @Parameter(hidden = true) authentication: Authentication,
+        @Parameter(hidden = true) loginMember: LoginMember,
     ): BaseResponse<MeResponse>
 }

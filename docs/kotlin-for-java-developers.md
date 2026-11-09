@@ -221,7 +221,7 @@ Java 의 오버로딩 생성자 여러 개, `@Builder` 가 모두 필요 없다.
 
 ```kotlin
 // TodoDto.kt
-fun Todo.toResponse(): TodoResponse = TodoResponse(id = checkNotNull(id), title = title, completed = completed)
+fun Todo.toResponse(): TodoResponse = TodoResponse(id = requireId(), title = title, completed = completed, imageUrl = imageUrl)
 
 // PageResponse.kt — Spring 의 Page 에 변환 함수 추가
 fun <T : Any, R : Any> Page<T>.toPageResponse(transform: (T) -> R): PageResponse<R> = ...

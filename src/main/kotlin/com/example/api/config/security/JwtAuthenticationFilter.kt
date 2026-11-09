@@ -19,7 +19,7 @@ import org.springframework.web.filter.OncePerRequestFilter
 /**
  * JWT 인증 필터
  *
- * `Authorization: Bearer {token}` 을 검증해 SecurityContext 에 인증 정보(principal = 이메일)를 넣는다.
+ * `Authorization: Bearer {token}` 을 검증해 SecurityContext 에 인증 정보(principal = [LoginMember])를 넣는다.
  * 로그아웃으로 차단 목록(Redis)에 오른 토큰은 인증하지 않는다.
  *
  * 인증에 성공하면 회원 번호를 MDC([MDC_KEY])에 넣어 이후 로그 줄에 남긴다. 이메일은 개인정보라 남기지 않는다.
@@ -37,13 +37,21 @@ class JwtAuthenticationFilter(
         filterChain: FilterChain,
     ) {
         val claims = jwtTokenProvider.getValidClaims(resolveToken(request))
-        if (claims != null && !isDenied(claims)) {
-            val authorities = listOfNotNull(claims.role).map(::SimpleGrantedAuthority)
+        val loginMember = claims?.takeUnless { isDenied(it) }?.toLoginMember()
+        if (loginMember != null) {
+            val authorities = listOfNotNull(claims?.role).map(::SimpleGrantedAuthority)
             SecurityContextHolder.getContext().authentication =
-                UsernamePasswordAuthenticationToken(claims.subject, null, authorities)
-            claims.memberId?.let { MDC.put(MDC_KEY, it.toString()) }
+                UsernamePasswordAuthenticationToken(loginMember, null, authorities)
+            MDC.put(MDC_KEY, loginMember.id.toString())
         }
         filterChain.doFilter(request, response)
+    }
+
+    /** 회원 번호나 이메일이 없는 토큰은 인증하지 않는다 */
+    private fun Claims.toLoginMember(): LoginMember? {
+        val id = memberId
+        val email = subject
+        return if (id != null && email != null) LoginMember(id, email) else null
     }
 
     /**

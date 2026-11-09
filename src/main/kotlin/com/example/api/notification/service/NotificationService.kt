@@ -1,11 +1,9 @@
 package com.example.api.notification.service
 
-import com.example.api.common.exception.ApiException
-import com.example.api.common.type.ApiStatus
 import com.example.api.common.type.RedisKeys
-import com.example.api.domain.repository.MemberRepository
 import com.example.api.notification.dto.TodoCompletedNotification
 import org.slf4j.LoggerFactory
+import org.springframework.dao.DataAccessException
 import org.springframework.data.redis.connection.MessageListener
 import org.springframework.data.redis.core.StringRedisTemplate
 import org.springframework.data.redis.listener.ChannelTopic
@@ -25,7 +23,6 @@ import java.util.concurrent.ConcurrentHashMap
  */
 @Service
 class NotificationService(
-    private val memberRepository: MemberRepository,
     private val stringRedisTemplate: StringRedisTemplate,
     private val listenerContainer: RedisMessageListenerContainer,
     private val objectMapper: ObjectMapper,
@@ -34,8 +31,7 @@ class NotificationService(
     private val emitters = ConcurrentHashMap<Long, SseEmitter>()
     private val listeners = ConcurrentHashMap<Long, MessageListener>()
 
-    fun subscribe(email: String): SseEmitter {
-        val memberId = memberRepository.findByEmail(email)?.id ?: throw ApiException(ApiStatus.AUTH_UNAUTHORIZED)
+    fun subscribe(memberId: Long): SseEmitter {
         cleanup(memberId)
 
         val emitter = SseEmitter(SSE_TIMEOUT_MS)
@@ -49,8 +45,12 @@ class NotificationService(
         listenerContainer.addMessageListener(listener, ChannelTopic(RedisKeys.NOTIFICATION_CHANNEL.key(memberId)))
 
         // 연결 직후 이벤트를 보내 클라이언트가 연결됐음을 알 수 있게 한다
-        runCatching { emitter.send(SseEmitter.event().name("connect").data("connected")) }
-            .onFailure { cleanup(memberId, emitter) }
+        try {
+            emitter.send(SseEmitter.event().name("connect").data("connected"))
+        } catch (e: IOException) {
+            log.debug("SSE 연결 직후 전송 실패: memberId={} - {}", memberId, e.message)
+            cleanup(memberId, emitter)
+        }
         log.debug("SSE 구독 등록: memberId={}", memberId)
         return emitter
     }
@@ -59,12 +59,15 @@ class NotificationService(
         memberId: Long,
         notification: TodoCompletedNotification,
     ) {
-        runCatching {
+        try {
             stringRedisTemplate.convertAndSend(
                 RedisKeys.NOTIFICATION_CHANNEL.key(memberId),
                 objectMapper.writeValueAsString(notification),
             )
-        }.onFailure { log.error("알림 발행 실패: memberId={}", memberId, it) }
+        } catch (e: DataAccessException) {
+            // 알림은 부가 기능이라 실패해도 할 일 완료 처리를 되돌리지 않는다
+            log.error("알림 발행 실패: memberId={}", memberId, e)
+        }
     }
 
     private fun send(

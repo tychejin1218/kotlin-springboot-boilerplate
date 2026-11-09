@@ -1,6 +1,7 @@
 package com.example.api.common.component
 
 import org.slf4j.LoggerFactory
+import org.springframework.dao.DataAccessException
 import org.springframework.data.redis.core.StringRedisTemplate
 import org.springframework.data.redis.core.script.RedisScript
 import org.springframework.stereotype.Component
@@ -9,8 +10,9 @@ import java.time.Duration
 /**
  * Redis 문자열 연산
  *
- * Redis 장애가 요청 전체 실패로 번지지 않도록 모든 연산은 예외를 삼키고 로그만 남긴다.
- * 조회 실패는 null, 변경 실패는 false 로 돌려준다. 객체 캐시는 `@Cacheable` 을 쓴다.
+ * Redis 장애가 요청 전체 실패로 번지지 않도록 Redis 예외(DataAccessException)는 로그만 남기고
+ * 조회 실패는 null, 변경 실패는 false 로 돌려준다. 그 밖의 예외(버그)는 그대로 던진다.
+ * 객체 캐시는 `@Cacheable` 을 쓴다.
  */
 @Component
 class RedisComponent(
@@ -23,16 +25,16 @@ class RedisComponent(
         value: String,
         ttl: Duration,
     ) {
-        runCatching { stringRedisTemplate.opsForValue().set(key, value, ttl) }
-            .onFailure { log.error("[setValue] 실패 - key: {}", key, it) }
+        ignoringRedisFailure("setValue", key, Unit) { stringRedisTemplate.opsForValue().set(key, value, ttl) }
     }
 
     /** 값이 없거나 비어 있거나 Redis 장애면 null */
     fun getValue(key: String): String? =
-        runCatching { stringRedisTemplate.opsForValue().get(key) }
-            .onFailure { log.error("[getValue] 실패 - key: {}", key, it) }
-            .getOrNull()
-            ?.takeIf { it.isNotBlank() }
+        ignoringRedisFailure(
+            "getValue",
+            key,
+            null,
+        ) { stringRedisTemplate.opsForValue().get(key) }?.takeIf { it.isNotBlank() }
 
     /**
      * 값이 [expected] 와 같을 때만 [newValue] 로 바꾸고 TTL 을 다시 건다 (compare-and-set)
@@ -46,7 +48,7 @@ class RedisComponent(
         newValue: String,
         ttl: Duration,
     ): Boolean =
-        runCatching {
+        ignoringRedisFailure("compareAndSet", key, false) {
             stringRedisTemplate.execute(
                 COMPARE_AND_SET_SCRIPT,
                 listOf(key),
@@ -55,25 +57,33 @@ class RedisComponent(
                 ttl.toMillis().toString(),
             ) ==
                 1L
-        }.onFailure { log.error("[compareAndSet] 실패 - key: {}", key, it) }
-            .getOrDefault(false)
+        }
 
-    fun delete(key: String): Boolean =
-        runCatching { stringRedisTemplate.delete(key) }
-            .onFailure { log.error("[delete] 실패 - key: {}", key, it) }
-            .getOrDefault(false)
+    fun delete(key: String): Boolean = ignoringRedisFailure("delete", key, false) { stringRedisTemplate.delete(key) }
 
     /** 정수 카운터 증가. 처음 만들 때만 TTL 을 건다. Redis 장애면 null */
     fun increment(
         key: String,
         ttl: Duration,
     ): Long? =
-        runCatching {
-            stringRedisTemplate.opsForValue().increment(key)?.also { count ->
-                if (count == 1L) stringRedisTemplate.expire(key, ttl)
-            }
-        }.onFailure { log.error("[increment] 실패 - key: {}", key, it) }
-            .getOrNull()
+        ignoringRedisFailure("increment", key, null) {
+            val count = stringRedisTemplate.opsForValue().increment(key)
+            if (count == 1L) stringRedisTemplate.expire(key, ttl)
+            count
+        }
+
+    private inline fun <T> ignoringRedisFailure(
+        operation: String,
+        key: String,
+        fallback: T,
+        block: () -> T,
+    ): T =
+        try {
+            block()
+        } catch (e: DataAccessException) {
+            log.error("[{}] 실패 - key: {}", operation, key, e)
+            fallback
+        }
 
     companion object {
         private val COMPARE_AND_SET_SCRIPT =

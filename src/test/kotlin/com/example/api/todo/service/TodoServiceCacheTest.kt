@@ -27,43 +27,45 @@ class TodoServiceCacheTest(
     private val email = "cache-${UUID.randomUUID()}@test.com"
     private val cachePattern = "${RedisKeys.CACHE_PREFIX}${CacheConfig.TODO_LIST}:*"
 
+    private var memberId = 0L
+
     @BeforeEach
     fun setUp() {
         redisTemplate.delete(redisTemplate.keys(cachePattern))
-        memberRepository.save(Member(email = email, name = "캐시", password = "x"))
-        todoService.insertTodo(email, TodoCreateRequest("캐시할 일"))
+        memberId = memberRepository.save(Member(email = email, name = "캐시", password = "x")).requireId()
+        todoService.insertTodo(memberId, TodoCreateRequest("캐시할 일"))
     }
 
     @Test
     fun `목록을 캐시해 두 번째 조회는 DB 를 바꿔도 캐시된 값을 돌려준다`() {
-        val first = todoService.getTodoList(email, TodoListRequest())
+        val first = todoService.getTodoList(memberId, TodoListRequest())
         jdbcTemplate.update("UPDATE todo SET title = '바뀐 제목' WHERE title = '캐시할 일'")
 
-        val second = todoService.getTodoList(email, TodoListRequest())
+        val second = todoService.getTodoList(memberId, TodoListRequest())
 
         assertThat(second).isEqualTo(first)
         assertThat(second.content.single().title).isEqualTo("캐시할 일")
     }
 
     @Test
-    fun `캐시 키는 APP CACHE 접두사를 쓰고 이메일을 그대로 담지 않는다`() {
-        todoService.getTodoList(email, TodoListRequest())
+    fun `캐시 키는 APP CACHE 접두사와 회원 번호로 만들고 이메일을 담지 않는다`() {
+        todoService.getTodoList(memberId, TodoListRequest())
 
         val keys = redisTemplate.keys(cachePattern)
         assertThat(keys).hasSize(1)
-        assertThat(keys.single()).doesNotContain(email).endsWith(":0:10:ALL:ID")
+        assertThat(keys.single()).doesNotContain(email).endsWith(":$memberId:0:10:ALL:ID")
     }
 
     @Test
     fun `할 일을 바꾸면 목록 캐시를 비운다`() {
-        val before = todoService.getTodoList(email, TodoListRequest())
+        val before = todoService.getTodoList(memberId, TodoListRequest())
 
-        todoService.updateTodoComplete(email, before.content.single().id)
+        todoService.updateTodoComplete(memberId, before.content.single().id)
 
         assertThat(redisTemplate.keys(cachePattern)).isEmpty()
         assertThat(
             todoService
-                .getTodoList(email, TodoListRequest())
+                .getTodoList(memberId, TodoListRequest())
                 .content
                 .single()
                 .completed,

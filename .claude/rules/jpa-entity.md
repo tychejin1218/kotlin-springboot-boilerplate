@@ -8,6 +8,7 @@ paths:
 - `data class` 금지 (equals/hashCode/toString이 연관관계·프록시와 충돌)
 - `allOpen`·`plugin.jpa`가 build.gradle.kts에 설정되어 있으므로 `open`/기본 생성자를 직접 쓰지 않는다
 - 상태 변경은 `var ... protected set` + 의미 있는 메서드(`complete()`, `softDelete()`)
+- PK 는 `override var id: Long? = null` + `protected set` (`BaseAudit` 의 `abstract val id`). 저장된 엔티티의 PK 가 필요하면 `requireId()` 를 쓰고 `checkNotNull(id)` 를 반복하지 않는다
 - 연관관계는 `@ManyToOne(fetch = FetchType.LAZY)`. 필요 없는 양방향 매핑(`@OneToMany`)은 만들지 않는다
 - 감사 컬럼은 `BaseAudit` 상속 (UTC 기록)
 - 논리 삭제 대상은 `@SQLRestriction("deleted_at IS NULL")`을 붙여 모든 조회에서 제외한다

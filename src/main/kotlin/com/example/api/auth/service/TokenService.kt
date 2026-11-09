@@ -127,6 +127,4 @@ class TokenService(
             redisComponent.setValue(RedisKeys.ACCESS_TOKEN_DENY.key(jti), "1", remaining)
         }
     }
-
-    private fun Member.requireId(): Long = checkNotNull(id) { "저장되지 않은 회원에게는 토큰을 발급할 수 없습니다." }
 }

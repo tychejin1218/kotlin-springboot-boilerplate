@@ -19,20 +19,19 @@ class JasyptConfig {
     @Bean(BEAN_NAME)
     fun jasyptStringEncryptor(
         @Value("\${jasypt.encryptor.password:}") password: String,
-    ): StringEncryptor =
-        PooledPBEStringEncryptor().apply {
-            setConfig(
-                SimpleStringPBEConfig().apply {
-                    setPassword(password)
-                    algorithm = "PBEWITHHMACSHA512ANDAES_256"
-                    setKeyObtentionIterations("1000")
-                    setPoolSize("1")
-                    setSaltGeneratorClassName("org.jasypt.salt.RandomSaltGenerator")
-                    setIvGeneratorClassName("org.jasypt.iv.RandomIvGenerator")
-                    stringOutputType = "base64"
-                },
-            )
-        }
+    ): StringEncryptor {
+        val config =
+            SimpleStringPBEConfig().apply {
+                setPassword(password)
+                algorithm = "PBEWITHHMACSHA512ANDAES_256"
+                setKeyObtentionIterations("1000")
+                setPoolSize("1")
+                setSaltGeneratorClassName("org.jasypt.salt.RandomSaltGenerator")
+                setIvGeneratorClassName("org.jasypt.iv.RandomIvGenerator")
+                stringOutputType = "base64"
+            }
+        return PooledPBEStringEncryptor().apply { setConfig(config) }
+    }
 
     companion object {
         /** application.yml 의 jasypt.encryptor.bean 과 같아야 한다 */

@@ -3,6 +3,7 @@ package com.example.api.todo.controller
 import com.example.api.common.response.BaseResponse
 import com.example.api.common.response.ErrorResponse
 import com.example.api.common.response.PageResponse
+import com.example.api.config.security.LoginMember
 import com.example.api.todo.dto.TodoCreateRequest
 import com.example.api.todo.dto.TodoImageUpdateRequest
 import com.example.api.todo.dto.TodoListRequest
@@ -14,7 +15,6 @@ import io.swagger.v3.oas.annotations.media.ExampleObject
 import io.swagger.v3.oas.annotations.media.Schema
 import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.tags.Tag
-import org.springframework.security.core.Authentication
 
 /**
  * 할 일 API 문서 (Swagger 어노테이션)
@@ -59,7 +59,7 @@ interface TodoControllerDocs {
         content = [Content(schema = Schema(implementation = ErrorResponse::class))],
     )
     fun getTodoList(
-        @Parameter(hidden = true) authentication: Authentication,
+        @Parameter(hidden = true) loginMember: LoginMember,
         request: TodoListRequest,
     ): BaseResponse<PageResponse<TodoResponse>>
 
@@ -71,7 +71,7 @@ interface TodoControllerDocs {
         content = [Content(schema = Schema(implementation = ErrorResponse::class))],
     )
     fun getTodo(
-        @Parameter(hidden = true) authentication: Authentication,
+        @Parameter(hidden = true) loginMember: LoginMember,
         id: Long,
     ): BaseResponse<TodoResponse>
 
@@ -83,7 +83,7 @@ interface TodoControllerDocs {
         content = [Content(schema = Schema(implementation = ErrorResponse::class))],
     )
     fun insertTodo(
-        @Parameter(hidden = true) authentication: Authentication,
+        @Parameter(hidden = true) loginMember: LoginMember,
         request: TodoCreateRequest,
     ): BaseResponse<TodoResponse>
 
@@ -95,7 +95,7 @@ interface TodoControllerDocs {
         content = [Content(schema = Schema(implementation = ErrorResponse::class))],
     )
     fun updateTodoComplete(
-        @Parameter(hidden = true) authentication: Authentication,
+        @Parameter(hidden = true) loginMember: LoginMember,
         id: Long,
     ): BaseResponse<TodoResponse>
 
@@ -107,7 +107,7 @@ interface TodoControllerDocs {
         content = [Content(schema = Schema(implementation = ErrorResponse::class))],
     )
     fun updateTodoImage(
-        @Parameter(hidden = true) authentication: Authentication,
+        @Parameter(hidden = true) loginMember: LoginMember,
         id: Long,
         request: TodoImageUpdateRequest,
     ): BaseResponse<TodoResponse>
@@ -120,7 +120,7 @@ interface TodoControllerDocs {
         content = [Content(schema = Schema(implementation = ErrorResponse::class))],
     )
     fun deleteTodo(
-        @Parameter(hidden = true) authentication: Authentication,
+        @Parameter(hidden = true) loginMember: LoginMember,
         id: Long,
     ): BaseResponse<Unit>
 }

@@ -15,7 +15,7 @@ data class MeResponse(
 
 fun Member.toMeResponse(): MeResponse =
     MeResponse(
-        id = checkNotNull(id) { "저장되지 않은 회원은 응답으로 변환할 수 없습니다." },
+        id = requireId(),
         name = name,
         email = email,
     )

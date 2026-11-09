@@ -4,6 +4,7 @@ import com.example.api.common.exception.ApiException
 import com.example.api.common.response.PageResponse
 import com.example.api.common.type.ApiStatus
 import com.example.api.support.ImportSecurityConfig
+import com.example.api.support.WithLoginMember
 import com.example.api.todo.dto.TodoCreateRequest
 import com.example.api.todo.dto.TodoListRequest
 import com.example.api.todo.dto.TodoResponse
@@ -19,18 +20,17 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest
 import org.springframework.http.MediaType
 import org.springframework.security.test.context.support.WithAnonymousUser
-import org.springframework.security.test.context.support.WithMockUser
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.delete
 import org.springframework.test.web.servlet.get
 import org.springframework.test.web.servlet.patch
 import org.springframework.test.web.servlet.post
 
-private const val EMAIL = "user1@example.com"
+private const val MEMBER_ID = 1L
 
 @WebMvcTest(TodoController::class)
 @ImportSecurityConfig
-@WithMockUser(username = EMAIL)
+@WithLoginMember(id = MEMBER_ID)
 class TodoControllerTest(
     @Autowired private val mockMvc: MockMvc,
 ) {
@@ -40,7 +40,7 @@ class TodoControllerTest(
     @Test
     fun `목록 조회는 쿼리 파라미터를 요청 DTO 로 바인딩하고 페이지 응답을 반환한다`() {
         val request = TodoListRequest(page = 1, size = 5, status = TodoStatus.COMPLETED, sort = TodoSort.TITLE)
-        every { todoService.getTodoList(EMAIL, request) } returns
+        every { todoService.getTodoList(MEMBER_ID, request) } returns
             PageResponse.of(listOf(TodoResponse(1, "스프링 공부", true)), totalElements = 6, page = 1, size = 5)
 
         mockMvc
@@ -60,17 +60,17 @@ class TodoControllerTest(
 
     @Test
     fun `목록 조회 파라미터를 생략하면 기본값으로 조회한다`() {
-        every { todoService.getTodoList(EMAIL, TodoListRequest()) } returns PageResponse.of(emptyList(), 0, 0, 10)
+        every { todoService.getTodoList(MEMBER_ID, TodoListRequest()) } returns PageResponse.of(emptyList(), 0, 0, 10)
 
         mockMvc.get("/todos").andExpect { status { isOk() } }
 
-        verify { todoService.getTodoList(EMAIL, TodoListRequest()) }
+        verify { todoService.getTodoList(MEMBER_ID, TodoListRequest()) }
     }
 
     @Test
     fun `상태 필터와 정렬 값은 대소문자를 구분하지 않는다`() {
         val request = TodoListRequest(status = TodoStatus.INCOMPLETE, sort = TodoSort.ID)
-        every { todoService.getTodoList(EMAIL, request) } returns PageResponse.of(emptyList(), 0, 0, 10)
+        every { todoService.getTodoList(MEMBER_ID, request) } returns PageResponse.of(emptyList(), 0, 0, 10)
 
         mockMvc
             .get("/todos") {
@@ -78,16 +78,16 @@ class TodoControllerTest(
                 param("sort", "Id")
             }.andExpect { status { isOk() } }
 
-        verify { todoService.getTodoList(EMAIL, request) }
+        verify { todoService.getTodoList(MEMBER_ID, request) }
     }
 
     @Test
     fun `빈 상태 필터는 기본값으로 조회한다`() {
-        every { todoService.getTodoList(EMAIL, TodoListRequest()) } returns PageResponse.of(emptyList(), 0, 0, 10)
+        every { todoService.getTodoList(MEMBER_ID, TodoListRequest()) } returns PageResponse.of(emptyList(), 0, 0, 10)
 
         mockMvc.get("/todos") { param("status", "") }.andExpect { status { isOk() } }
 
-        verify { todoService.getTodoList(EMAIL, TodoListRequest()) }
+        verify { todoService.getTodoList(MEMBER_ID, TodoListRequest()) }
     }
 
     @Test
@@ -109,7 +109,7 @@ class TodoControllerTest(
 
     @Test
     fun `단건 조회 대상이 없으면 404 와 TODO_NOT_FOUND 로 응답한다`() {
-        every { todoService.getTodo(EMAIL, 99) } throws ApiException(ApiStatus.TODO_NOT_FOUND)
+        every { todoService.getTodo(MEMBER_ID, 99) } throws ApiException(ApiStatus.TODO_NOT_FOUND)
 
         mockMvc.get("/todos/99").andExpect {
             status { isNotFound() }
@@ -119,7 +119,8 @@ class TodoControllerTest(
 
     @Test
     fun `할 일을 생성하면 생성된 할 일을 반환한다`() {
-        every { todoService.insertTodo(EMAIL, TodoCreateRequest("스프링 공부")) } returns TodoResponse(1, "스프링 공부", false)
+        every { todoService.insertTodo(MEMBER_ID, TodoCreateRequest("스프링 공부")) } returns
+            TodoResponse(1, "스프링 공부", false)
 
         mockMvc
             .post("/todos") {
@@ -146,7 +147,7 @@ class TodoControllerTest(
 
     @Test
     fun `완료 처리하면 완료된 할 일을 반환한다`() {
-        every { todoService.updateTodoComplete(EMAIL, 1) } returns TodoResponse(1, "스프링 공부", true)
+        every { todoService.updateTodoComplete(MEMBER_ID, 1) } returns TodoResponse(1, "스프링 공부", true)
 
         mockMvc.patch("/todos/1/complete").andExpect {
             status { isOk() }
@@ -156,7 +157,7 @@ class TodoControllerTest(
 
     @Test
     fun `삭제하면 데이터 없이 성공 응답을 반환한다`() {
-        justRun { todoService.deleteTodo(EMAIL, 1) }
+        justRun { todoService.deleteTodo(MEMBER_ID, 1) }
 
         mockMvc.delete("/todos/1").andExpect {
             status { isOk() }
@@ -164,7 +165,7 @@ class TodoControllerTest(
             jsonPath("$.data") { doesNotExist() }
         }
 
-        verify { todoService.deleteTodo(EMAIL, 1) }
+        verify { todoService.deleteTodo(MEMBER_ID, 1) }
     }
 
     @Test

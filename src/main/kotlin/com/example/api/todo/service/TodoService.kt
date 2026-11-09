@@ -20,17 +20,18 @@ import org.springframework.cache.annotation.CacheEvict
 import org.springframework.cache.annotation.Cacheable
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.data.domain.PageRequest
+import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
 /**
  * 할 일 서비스
  *
- * 모든 메서드는 로그인한 회원(email)이 소유한 할 일만 다룬다. 다른 회원의 할 일은 없는 것(TODO_NOT_FOUND)으로 본다.
+ * 모든 메서드는 로그인한 회원(memberId)이 소유한 할 일만 다룬다. 다른 회원의 할 일은 없는 것(TODO_NOT_FOUND)으로 본다.
  * 클래스 기본은 읽기 전용(Reader DB), 변경 메서드만 @Transactional(Writer DB)
  *
  * 목록은 회원·조회 조건별로 Redis 에 캐시하고, 변경하면 목록 캐시를 모두 비운다.
- * 캐시 키에는 이메일 대신 이메일의 해시를 쓴다 (Redis 키에 개인정보를 남기지 않는다).
+ * 캐시 키는 회원 번호로 만든다 (Redis 키에 이메일 같은 개인정보를 남기지 않는다).
  */
 @Service
 @Transactional(readOnly = true)
@@ -49,34 +50,32 @@ class TodoService(
 
     @Cacheable(
         cacheNames = [CacheConfig.TODO_LIST],
-        key =
-            "T(org.springframework.util.DigestUtils).md5DigestAsHex(#email.getBytes())" +
-                " + ':' + #request.page + ':' + #request.size + ':' + #request.status + ':' + #request.sort",
+        key = "#memberId + ':' + #request.page + ':' + #request.size + ':' + #request.status + ':' + #request.sort",
     )
     fun getTodoList(
-        email: String,
+        memberId: Long,
         request: TodoListRequest,
     ): PageResponse<TodoResponse> =
         todoRepository
             .findTodoPage(
-                email = email,
+                memberId = memberId,
                 completed = request.status.completed,
                 pageable = PageRequest.of(request.page, request.size, request.sort.sort),
             ).toPageResponse { it.toResponse() }
 
     fun getTodo(
-        email: String,
+        memberId: Long,
         id: Long,
-    ): TodoResponse = findTodo(email, id).toResponse()
+    ): TodoResponse = findTodo(memberId, id).toResponse()
 
     @CacheEvict(cacheNames = [CacheConfig.TODO_LIST], allEntries = true)
     @Transactional
     fun insertTodo(
-        email: String,
+        memberId: Long,
         request: TodoCreateRequest,
     ): TodoResponse {
         // 토큰은 유효하지만 그 사이 탈퇴한 회원
-        val member = memberRepository.findByEmail(email) ?: throw ApiException(ApiStatus.AUTH_UNAUTHORIZED)
+        val member = memberRepository.findByIdOrNull(memberId) ?: throw ApiException(ApiStatus.AUTH_UNAUTHORIZED)
         val todo = todoRepository.save(Todo(title = request.title, member = member))
         todoCreateCounter.increment()
         return todo.toResponse()
@@ -85,13 +84,13 @@ class TodoService(
     @CacheEvict(cacheNames = [CacheConfig.TODO_LIST], allEntries = true)
     @Transactional
     fun updateTodoComplete(
-        email: String,
+        memberId: Long,
         id: Long,
     ): TodoResponse {
-        val todo = findTodo(email, id)
+        val todo = findTodo(memberId, id)
         todo.complete()
         // [예제: notification] 완료 알림. 커밋 뒤에 발행된다 (NotificationEventListener)
-        eventPublisher.publishEvent(TodoCompleteEvent(checkNotNull(todo.member.id), checkNotNull(todo.id), todo.title))
+        eventPublisher.publishEvent(TodoCompleteEvent(memberId, todo.requireId(), todo.title))
         return todo.toResponse()
     }
 
@@ -99,11 +98,11 @@ class TodoService(
     @CacheEvict(cacheNames = [CacheConfig.TODO_LIST], allEntries = true)
     @Transactional
     fun updateTodoImage(
-        email: String,
+        memberId: Long,
         id: Long,
         request: TodoImageUpdateRequest,
     ): TodoResponse {
-        val todo = findTodo(email, id)
+        val todo = findTodo(memberId, id)
         todo.updateImage(request.imageUrl)
         return todo.toResponse()
     }
@@ -111,14 +110,14 @@ class TodoService(
     @CacheEvict(cacheNames = [CacheConfig.TODO_LIST], allEntries = true)
     @Transactional
     fun deleteTodo(
-        email: String,
+        memberId: Long,
         id: Long,
     ) {
-        findTodo(email, id).softDelete()
+        findTodo(memberId, id).softDelete()
     }
 
     private fun findTodo(
-        email: String,
+        memberId: Long,
         id: Long,
-    ): Todo = todoRepository.findByIdAndMemberEmail(id, email) ?: throw ApiException(ApiStatus.TODO_NOT_FOUND)
+    ): Todo = todoRepository.findByIdAndMemberId(id, memberId) ?: throw ApiException(ApiStatus.TODO_NOT_FOUND)
 }

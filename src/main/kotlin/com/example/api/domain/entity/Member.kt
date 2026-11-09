@@ -28,7 +28,7 @@ class Member(
 ) : BaseAudit() {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    var id: Long? = null
+    override var id: Long? = null
         protected set
 
     @Column(name = "email", nullable = false, length = 200)

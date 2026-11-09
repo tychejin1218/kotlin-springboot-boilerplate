@@ -25,7 +25,7 @@ class Todo(
 ) : BaseAudit() {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    var id: Long? = null
+    override var id: Long? = null
         protected set
 
     @Column(name = "title", nullable = false, length = 200)

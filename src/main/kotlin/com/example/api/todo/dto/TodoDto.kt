@@ -86,7 +86,7 @@ data class TodoResponse(
 
 fun Todo.toResponse(): TodoResponse =
     TodoResponse(
-        id = checkNotNull(id) { "저장되지 않은 Todo 는 응답으로 변환할 수 없습니다." },
+        id = requireId(),
         title = title,
         completed = completed,
         imageUrl = imageUrl,

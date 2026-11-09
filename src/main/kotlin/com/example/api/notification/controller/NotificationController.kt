@@ -1,9 +1,10 @@
 package com.example.api.notification.controller
 
+import com.example.api.config.security.LoginMember
 import com.example.api.notification.service.NotificationService
 import io.swagger.v3.oas.annotations.Hidden
 import org.springframework.http.MediaType
-import org.springframework.security.core.Authentication
+import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
@@ -22,5 +23,7 @@ class NotificationController(
     private val notificationService: NotificationService,
 ) {
     @GetMapping("/subscribe", produces = [MediaType.TEXT_EVENT_STREAM_VALUE])
-    fun subscribe(authentication: Authentication): SseEmitter = notificationService.subscribe(authentication.name)
+    fun subscribe(
+        @AuthenticationPrincipal loginMember: LoginMember,
+    ): SseEmitter = notificationService.subscribe(loginMember.id)
 }

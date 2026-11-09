@@ -17,6 +17,9 @@ import java.time.ZoneOffset
 @MappedSuperclass
 @EntityListeners(AuditingEntityListener::class)
 abstract class BaseAudit {
+    /** PK. 저장(persist)하기 전에는 null */
+    abstract val id: Long?
+
     @CreatedDate
     @Column(name = "created_at", nullable = false, updatable = false)
     var createdAt: LocalDateTime? = null
@@ -33,6 +36,9 @@ abstract class BaseAudit {
 
     val isDeleted: Boolean
         get() = deletedAt != null
+
+    /** 저장된 엔티티의 PK. 저장하기 전에 부르면 IllegalStateException */
+    fun requireId(): Long = checkNotNull(id) { "${javaClass.simpleName} 이 아직 저장되지 않았습니다." }
 
     /** 논리 삭제 */
     fun softDelete() {

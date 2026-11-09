@@ -27,6 +27,7 @@ import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Pageable
 import org.springframework.data.domain.Sort
 import org.springframework.test.util.ReflectionTestUtils
+import java.util.Optional
 
 class TodoServiceTest {
     private val todoRepository = mockk<TodoRepository>()
@@ -36,19 +37,19 @@ class TodoServiceTest {
     private val todoService = TodoService(todoRepository, memberRepository, eventPublisher, meterRegistry)
     private val member =
         Member(email = EMAIL, name = "홍길동", password = "x").also {
-            ReflectionTestUtils.setField(it, "id", 7L)
+            ReflectionTestUtils.setField(it, "id", MEMBER_ID)
         }
 
     @Test
     fun `목록 조회는 회원 이메일과 상태 필터, 정렬을 리포지토리 조건으로 바꿔 넘긴다`() {
         val pageable = slot<Pageable>()
-        every { todoRepository.findTodoPage(EMAIL, false, capture(pageable)) } answers {
+        every { todoRepository.findTodoPage(MEMBER_ID, false, capture(pageable)) } answers {
             PageImpl(listOf(todo(1, "a")), pageable.captured, 1)
         }
 
         val response =
             todoService.getTodoList(
-                EMAIL,
+                MEMBER_ID,
                 TodoListRequest(page = 0, size = 10, status = TodoStatus.INCOMPLETE, sort = TodoSort.TITLE),
             )
 
@@ -58,9 +59,9 @@ class TodoServiceTest {
 
     @Test
     fun `없거나 다른 회원의 할 일을 조회하면 TODO_NOT_FOUND 예외가 발생한다`() {
-        every { todoRepository.findByIdAndMemberEmail(99, EMAIL) } returns null
+        every { todoRepository.findByIdAndMemberId(99, MEMBER_ID) } returns null
 
-        assertThatThrownBy { todoService.getTodo(EMAIL, 99) }
+        assertThatThrownBy { todoService.getTodo(MEMBER_ID, 99) }
             .isInstanceOfSatisfying(ApiException::class.java) {
                 assertThat(it.apiStatus).isEqualTo(ApiStatus.TODO_NOT_FOUND)
             }
@@ -68,11 +69,11 @@ class TodoServiceTest {
 
     @Test
     fun `생성하면 로그인한 회원 소유의 미완료 할 일을 반환한다`() {
-        every { memberRepository.findByEmail(EMAIL) } returns member
+        every { memberRepository.findById(MEMBER_ID) } returns Optional.of(member)
         every { todoRepository.save(any()) } answers
             { firstArg<Todo>().also { ReflectionTestUtils.setField(it, "id", 1L) } }
 
-        val response = todoService.insertTodo(EMAIL, TodoCreateRequest("스프링 공부"))
+        val response = todoService.insertTodo(MEMBER_ID, TodoCreateRequest("스프링 공부"))
 
         assertThat(response.id).isEqualTo(1L)
         assertThat(response.completed).isFalse()
@@ -81,9 +82,9 @@ class TodoServiceTest {
 
     @Test
     fun `탈퇴한 회원이 생성하면 AUTH_UNAUTHORIZED 예외가 발생한다`() {
-        every { memberRepository.findByEmail(EMAIL) } returns null
+        every { memberRepository.findById(MEMBER_ID) } returns Optional.empty()
 
-        assertThatThrownBy { todoService.insertTodo(EMAIL, TodoCreateRequest("스프링 공부")) }
+        assertThatThrownBy { todoService.insertTodo(MEMBER_ID, TodoCreateRequest("스프링 공부")) }
             .isInstanceOfSatisfying(ApiException::class.java) {
                 assertThat(it.apiStatus).isEqualTo(ApiStatus.AUTH_UNAUTHORIZED)
             }
@@ -92,23 +93,27 @@ class TodoServiceTest {
     @Test
     fun `완료 처리하면 엔티티 상태가 바뀌고 완료 이벤트를 발행한다`() {
         val todo = todo(1, "스프링 공부")
-        every { todoRepository.findByIdAndMemberEmail(1, EMAIL) } returns todo
+        every { todoRepository.findByIdAndMemberId(1, MEMBER_ID) } returns todo
         justRun { eventPublisher.publishEvent(any<Any>()) }
 
-        val response = todoService.updateTodoComplete(EMAIL, 1)
+        val response = todoService.updateTodoComplete(MEMBER_ID, 1)
 
         assertThat(todo.completed).isTrue()
         assertThat(response.completed).isTrue()
-        verify { eventPublisher.publishEvent(TodoCompleteEvent(memberId = 7, todoId = 1, todoTitle = "스프링 공부")) }
+        verify {
+            eventPublisher.publishEvent(
+                TodoCompleteEvent(memberId = MEMBER_ID, todoId = 1, todoTitle = "스프링 공부"),
+            )
+        }
     }
 
     @Test
     fun `이미지를 바꾸면 응답에 이미지 URL 이 담긴다`() {
-        every { todoRepository.findByIdAndMemberEmail(1, EMAIL) } returns todo(1, "스프링 공부")
+        every { todoRepository.findByIdAndMemberId(1, MEMBER_ID) } returns todo(1, "스프링 공부")
 
         val response =
             todoService.updateTodoImage(
-                EMAIL,
+                MEMBER_ID,
                 1,
                 TodoImageUpdateRequest("http://localhost:9010/bucket/a.png"),
             )
@@ -119,9 +124,9 @@ class TodoServiceTest {
     @Test
     fun `삭제하면 논리 삭제된다`() {
         val todo = todo(1, "스프링 공부")
-        every { todoRepository.findByIdAndMemberEmail(1, EMAIL) } returns todo
+        every { todoRepository.findByIdAndMemberId(1, MEMBER_ID) } returns todo
 
-        todoService.deleteTodo(EMAIL, 1)
+        todoService.deleteTodo(MEMBER_ID, 1)
 
         assertThat(todo.isDeleted).isTrue()
     }
@@ -133,5 +138,6 @@ class TodoServiceTest {
 
     companion object {
         private const val EMAIL = "user1@example.com"
+        private const val MEMBER_ID = 7L
     }
 }

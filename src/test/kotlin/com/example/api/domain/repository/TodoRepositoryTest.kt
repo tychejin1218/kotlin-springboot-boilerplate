@@ -26,7 +26,7 @@ class TodoRepositoryTest(
 
     @BeforeEach
     fun setUp() {
-        owner = memberRepository.save(Member(email = "owner@test.com", name = "소유자", password = "x"))
+        owner = memberRepository.save(Member(email = OWNER_EMAIL, name = "소유자", password = "x"))
         other = memberRepository.save(Member(email = "other@test.com", name = "다른 회원", password = "x"))
     }
 
@@ -36,7 +36,7 @@ class TodoRepositoryTest(
         saveTodos(other, "남의 할 일")
         todoRepository.save(Todo(title = "완료", member = owner).apply { complete() })
 
-        val page = todoRepository.findTodoPage(OWNER_EMAIL, false, PageRequest.of(0, 3, Sort.by("title")))
+        val page = todoRepository.findTodoPage(owner.requireId(), false, PageRequest.of(0, 3, Sort.by("title")))
 
         assertThat(page.content.map { it.title }).containsExactly("가", "나", "다")
         assertThat(page.totalElements).isEqualTo(4)
@@ -51,7 +51,7 @@ class TodoRepositoryTest(
 
         val page =
             todoRepository.findTodoPage(
-                OWNER_EMAIL,
+                owner.requireId(),
                 null,
                 PageRequest.of(0, 10, Sort.by(Sort.Direction.DESC, "id")),
             )
@@ -64,8 +64,8 @@ class TodoRepositoryTest(
     fun `다른 회원의 할 일은 단건 조회되지 않는다`() {
         val (todo) = saveTodos(other, "남의 할 일")
 
-        assertThat(todoRepository.findByIdAndMemberEmail(checkNotNull(todo.id), OWNER_EMAIL)).isNull()
-        assertThat(todoRepository.findByIdAndMemberEmail(checkNotNull(todo.id), "other@test.com")).isNotNull()
+        assertThat(todoRepository.findByIdAndMemberId(todo.requireId(), owner.requireId())).isNull()
+        assertThat(todoRepository.findByIdAndMemberId(todo.requireId(), other.requireId())).isNotNull()
     }
 
     @Test
@@ -75,10 +75,10 @@ class TodoRepositoryTest(
         entityManager.flush()
         entityManager.clear()
 
-        val page = todoRepository.findTodoPage(OWNER_EMAIL, null, PageRequest.of(0, 10))
+        val page = todoRepository.findTodoPage(owner.requireId(), null, PageRequest.of(0, 10))
 
         assertThat(page.content.map { it.id }).containsExactly(kept.id)
-        assertThat(todoRepository.findByIdAndMemberEmail(checkNotNull(deleted.id), OWNER_EMAIL)).isNull()
+        assertThat(todoRepository.findByIdAndMemberId(deleted.requireId(), owner.requireId())).isNull()
     }
 
     @Test

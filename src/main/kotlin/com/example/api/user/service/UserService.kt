@@ -5,6 +5,7 @@ import com.example.api.common.type.ApiStatus
 import com.example.api.domain.repository.MemberRepository
 import com.example.api.user.dto.MeResponse
 import com.example.api.user.dto.toMeResponse
+import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
@@ -16,6 +17,6 @@ import org.springframework.transaction.annotation.Transactional
 class UserService(
     private val memberRepository: MemberRepository,
 ) {
-    fun getMe(email: String): MeResponse =
-        memberRepository.findByEmail(email)?.toMeResponse() ?: throw ApiException(ApiStatus.MEMBER_NOT_FOUND)
+    fun getMe(memberId: Long): MeResponse =
+        memberRepository.findByIdOrNull(memberId)?.toMeResponse() ?: throw ApiException(ApiStatus.MEMBER_NOT_FOUND)
 }
