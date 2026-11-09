@@ -55,55 +55,17 @@ Java 개발자용 상세 설명은 `docs/kotlin-for-java-developers.md`. Java �
 - API 문서: Swagger 어노테이션은 `{기능}/controller/XxxControllerDocs` 인터페이스에 두고 컨트롤러가 구현한다(`override fun`). DTO 필드는 `@Schema(description, example)`, 쿼리 파라미터 DTO 는 `@ParameterObject`. 기능 패키지를 추가하면 `OpenApiConfig` 에 `GroupedOpenApi` 빈을 추가한다
 - 프로파일별 설정: DataSource 는 `config/datasource/`, 그 밖의 환경 설정은 `config/environment/environment-{profile}.yml`
 - 요청 DTO 검증: `@field:` 없이 `@NotBlank(message = "...")` 사용 (`-Xannotation-default-target=param-property`, start.spring.io 기본값). 메시지는 오류 응답에 그대로 노출된다
-
-### 인증 / Redis
-
-- 인증 principal 은 이메일이다. 컨트롤러는 `authentication: Authentication` 을 받아 `authentication.name` 을 서비스에 넘긴다(Docs 인터페이스에서는 `@Parameter(hidden = true)`)
-- 인증 없이 열 경로는 `SecurityConfig.PERMIT_ALL_PATTERNS` 에 추가한다. 401/403 은 `ErrorResponse` JSON(`AUTH_UNAUTHORIZED`, `PERMISSION_FORBIDDEN`)
-- 소유자가 있는 데이터는 Repository 조건에 회원 이메일을 넣고, 남의 데이터는 `*_NOT_FOUND` 로 응답한다(존재 여부를 드러내지 않는다)
-- Redis 키는 `RedisKeys.XXX.key(식별자...)` 로만 만든다. 식별자에는 이메일 대신 회원 번호를 쓴다. 연산은 `RedisComponent`(장애 시 예외 대신 null/false)
-- 로그에 이메일 같은 개인정보를 남기지 않는다. 회원은 MDC `memberId` 로 식별된다
-- 캐시는 `@Cacheable(cacheNames = [CacheConfig.XXX])` + 변경 메서드에 `@CacheEvict`. 캐시 이름은 `CacheConfig` 상수로 둔다. 캐시 키에 이메일이 들어가면 해시로 바꾼다(`TodoService.getTodoList` 참고). 캐시할 값의 타입은 `com.example.api` 패키지 클래스와 표준 컬렉션이어야 한다(`CacheConfig` 의 타입 제한)
-- Rate Limit 경로는 `WebConfig.addInterceptors` 에 추가한다
 - 예제 기능(todo, 파일 업로드, notification, admin)이 공통 파일에 등록되는 곳에는 `[예제: 기능]` 주석을 붙이고, README 의 "예제 기능 제거 방법" 표를 함께 고친다
 
-### JPA Entity
+## 세부 규칙
 
-- `data class` 금지 (equals/hashCode/toString이 연관관계·프록시와 충돌)
-- `allOpen`·`plugin.jpa`가 build.gradle.kts에 설정되어 있으므로 `open`/기본 생성자를 직접 쓰지 않는다
-- 상태 변경은 `var ... protected set` + 의미 있는 메서드(`complete()`, `softDelete()`)
-- 감사 컬럼은 `BaseAudit` 상속 (UTC 기록)
-- 논리 삭제 대상은 `@SQLRestriction("deleted_at IS NULL")`을 붙여 모든 조회에서 제외한다
-- 시간은 UTC. `ApiApplication.main`이 JVM 기본 시간대를 UTC 로 고정하므로 `hibernate.jdbc.time_zone`은 두지 않는다
-- 테이블 DDL 은 `docker/init.sql`에 추가한다 (compose·Testcontainers 공용)
+`.claude/rules/` 의 규칙은 해당 경로의 파일을 다룰 때 자동으로 읽힌다.
 
-### Repository / Kotlin JDSL
+- [인증 · Redis · 캐시](.claude/rules/security-cache.md): auth, controller, service, config, common
+- [JPA Entity](.claude/rules/jpa-entity.md): domain/entity, docker/init.sql
+- [Repository / Kotlin JDSL](.claude/rules/data-access.md): domain/repository
+- [테스트](.claude/rules/testing.md): src/test
 
-- 단순 CRUD·메서드 이름 쿼리는 Spring Data JPA(`JpaRepository`)
-- 동적 조건·DTO 프로젝션·조인 쿼리는 Kotlin JDSL. Repository 가 `KotlinJdslJpqlExecutor`를 함께 상속한다
-- `whereAnd(...)`는 null 조건을 무시하므로 선택 검색 조건은 `?.let { ... }`으로 넘긴다
-- 정렬·페이지는 `Pageable`로 넘기고 쿼리 안에서 `orderBy`를 쓰지 않는다 (`findPage`가 Pageable 의 Sort 를 JPQL 에 붙인다)
-- 목록은 `findPage(pageable) { ... }`(`Page<T>`) → `page.toPageResponse { it.toResponse() }`. `findAll { }`은 `List<T?>`를 돌려주므로 `filterNotNull()`
-- 쿼리는 Repository 인터페이스의 default 메서드로 두고 서비스는 그 메서드만 호출한다
+## 커밋
 
-```kotlin
-interface TodoRepository : JpaRepository<Todo, Long>, KotlinJdslJpqlExecutor {
-    fun findTodoPage(completed: Boolean?, pageable: Pageable): Page<Todo> =
-        findPage(pageable) {
-            select(entity(Todo::class))
-                .from(entity(Todo::class))
-                .whereAnd(
-                    completed?.let { path(Todo::completed).eq(it) },
-                )
-        }
-}
-```
-
-## 테스트
-
-- 함수명은 백틱 한글 문장 (`` fun `존재하지 않는 ID 면 404 를 반환한다`() ``), `@DisplayName` 불필요
-- 컨트롤러: `@WebMvcTest` + `@ImportSecurityConfig`(실제 보안 설정 적용) + `@MockkBean` + MockMvc Kotlin DSL (`mockMvc.get("/x").andExpect { ... }`). 인증된 요청은 `@WithMockUser(username = "이메일")`
-- 서비스 단위: MockK. 엔티티 ID 는 `ReflectionTestUtils.setField(todo, "id", 1L)`로 넣는다
-- Repository·DB·Redis 통합: `support/IntegrationTest` 상속 (Testcontainers MySQL + Redis, Docker 없으면 건너뜀). DB 만 쓰는 테스트는 클래스에 `@Transactional`(테스트마다 롤백). 메일은 베이스의 `emailService` 목으로 확인한다
-- 여러 API 를 잇는 흐름(가입 → 인증 → 로그인 등)은 `@AutoConfigureMockMvc` + `IntegrationTest` 로 실제 MySQL·Redis 에 요청한다 (`auth/AuthFlowTest`)
-- `@SpringBootTest`에서 실제 DB 데이터에 의존하는 단정 금지 — 테스트 안에서 데이터를 만든다
+- `git config core.hooksPath .githooks` 를 한 번 해 두면 커밋할 때 `.githooks/pre-commit` 이 ktlint·detekt 를 돌린다 (테스트는 CI)

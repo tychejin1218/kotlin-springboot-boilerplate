@@ -49,6 +49,9 @@ Prometheus 는 호스트의 `:9091/api/actuator/prometheus` 를 수집합니다.
 ./gradlew clean test -Pcoverage      # 커버리지 리포트 + 최소 50% 검증 (-PcoverageMinimum=0.6)
 ```
 
+클론한 뒤 한 번 `git config core.hooksPath .githooks` 를 실행하면 커밋할 때 ktlint, detekt 가 돌아 실패하면 커밋을 막습니다(`.githooks/pre-commit`).
+GitHub Actions 워크플로는 `docs/github-actions-ci.yml` 에 준비해 두었습니다. `.github/workflows/ci.yml` 로 올리면 PR 과 main push 마다 `./gradlew build -Pcoverage` 로 정적 분석, 테스트, 커버리지를 검사합니다. 토큰으로 push 할 때는 토큰에 `workflow` 권한이 필요하고, GitHub 웹에서 파일을 만들면 권한 없이 올릴 수 있습니다.
+
 ## 프로파일
 
 `local` | `dev` | `stg` | `prd` — 프로파일마다 두 파일을 읽습니다.
@@ -182,4 +185,4 @@ docker exec -i kotlin-boilerplate-mysql mysql -uroot -proot < docker/init.sql
 5. ~~인증: Member, Spring Security, JWT, Redis, 메일~~
 6. ~~캐시, Rate Limit~~
 7. ~~예제: 파일 업로드(S3), 알림(SSE), 관리자 API~~
-8. ~~운영: Jasypt, Dockerfile, 모니터링~~
+. ~~개발 도구: pre-commit hook(ktlint, detekt), GitHub Actions CI 워크플로(docs), 경로별 Claude 규칙(.claude/rules)~~

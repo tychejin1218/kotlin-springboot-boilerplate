@@ -1,0 +1,19 @@
+#!/bin/bash
+# git pre-commit hook: Kotlin·Gradle 파일이 바뀌었으면 ktlint, detekt 를 돌리고 실패하면 커밋을 막는다.
+#
+# 연결: git config core.hooksPath .githooks  (클론 후 한 번)
+# 건너뛰기: git commit --no-verify  (CI 에서 같은 검사가 다시 돌므로 급할 때만)
+#
+# 테스트는 Docker(Testcontainers)가 필요하고 느려서 CI(docs/github-actions-ci.yml 참고)에서 돌린다.
+
+set -u
+
+staged=$(git diff --cached --name-only --diff-filter=ACMR)
+echo "$staged" | grep -q -E '\.(kt|kts)$|^config/detekt/|^\.editorconfig$' || exit 0
+
+echo "[pre-commit] ktlint + detekt"
+root=$(git rev-parse --show-toplevel)
+if ! (cd "$root" && ./gradlew -q ktlintCheck detekt); then
+  echo "[pre-commit] 정적 분석 실패. ./gradlew ktlintFormat 으로 포맷을 고치고 detekt 오류를 수정한 뒤 다시 커밋하세요." >&2
+  exit 1
+fi
