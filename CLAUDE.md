@@ -11,7 +11,9 @@ Spring Boot API 보일러플레이트 (Kotlin). 구조는 Java 버전 `spring-re
 ./gradlew build          # 컴파일 + ktlint + detekt + 테스트
 ./gradlew ktlintFormat   # 포맷 자동 정렬 (코드 수정 후 항상 실행)
 ./gradlew test           # Testcontainers 사용, Docker 필요
-docker compose up -d && ./gradlew bootRun   # MySQL·Redis·MailHog, :9091, context-path /api
+docker compose up -d && ./gradlew bootRun   # MySQL·Redis·MailHog·MinIO, :9091, context-path /api
+docker compose --profile monitoring up -d   # Prometheus(9190), Grafana(3001)
+./gradlew jasyptEncrypt --args="<비밀번호> <평문>"   # yml 의 ENC(...) 값 생성
 ```
 
 ## 아키텍처

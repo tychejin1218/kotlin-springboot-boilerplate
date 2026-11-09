@@ -1,0 +1,7 @@
+# 로컬 빌드 산출물과 IDE·Git 파일은 이미지 빌드 컨텍스트에서 뺀다
+build/
+.gradle/
+.kotlin/
+.idea/
+.git/
+.claude/

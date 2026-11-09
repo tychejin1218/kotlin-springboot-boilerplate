@@ -1,5 +1,31 @@
-# Java 보일러플레이트 compose 와 동시에 띄울 수 있도록 호스트 포트를 한 칸씩 비켜 둔다
+# Java 보일러플레이트 compose 와 동시에 띄울 수 있도록 호스트 포트를 비켜 둔다
+# docker compose up -d                        : 인프라 (MySQL, Redis, MailHog, MinIO)
+# docker compose --profile app up -d --build  : 인프라 + 앱 컨테이너
+# docker compose --profile monitoring up -d   : 인프라 + Prometheus(9190), Grafana(3001)
 services:
+  app:
+    profiles: [app]
+    build: .
+    container_name: kotlin-boilerplate-app
+    environment:
+      SPRING_PROFILES_ACTIVE: local
+      # local 프로파일은 localhost 를 가리키므로 컨테이너 안에서는 compose 서비스 이름으로 바꾼다
+      MAIN_DATASOURCE_WRITER_JDBC_URL: jdbc:mysql://mysql:3306/boilerplate_db?serverTimezone=UTC&characterEncoding=UTF-8
+      MAIN_DATASOURCE_READER_JDBC_URL: jdbc:mysql://mysql:3306/boilerplate_db?serverTimezone=UTC&characterEncoding=UTF-8
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_PORT: 6379
+      SPRING_MAIL_HOST: mailhog
+      SPRING_MAIL_PORT: 1025
+      # [예제: file-upload] Presigned URL 에 이 주소가 들어가므로 브라우저 업로드는 호스트에서 bootRun 으로 띄웠을 때만 된다
+      AWS_S3_ENDPOINT: http://minio:9000
+    ports:
+      - "9091:9091"
+    depends_on:
+      - mysql
+      - redis
+      - mailhog
+      - minio  # [예제: file-upload]
+
   mysql:
     image: mysql:8.0
     container_name: kotlin-boilerplate-mysql
@@ -45,7 +71,36 @@ services:
       - minio_data:/data
     command: server /data --console-address ":9001"
 
+  prometheus:
+    profiles: [monitoring]
+    image: prom/prometheus:v3.5.0
+    container_name: kotlin-boilerplate-prometheus
+    ports:
+      - "9190:9090"  # http://localhost:9190
+    volumes:
+      - ./docker/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    extra_hosts:
+      - "host.docker.internal:host-gateway"  # Linux 에서도 호스트의 앱(9091)을 수집한다
+
+  grafana:
+    profiles: [monitoring]
+    image: grafana/grafana:12.1.1
+    container_name: kotlin-boilerplate-grafana
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+    ports:
+      - "3001:3000"  # http://localhost:3001 (admin / admin)
+    volumes:
+      - ./docker/grafana/provisioning:/etc/grafana/provisioning  # Prometheus 데이터 소스 자동 등록
+      - grafana_data:/var/lib/grafana
+    depends_on:
+      - prometheus
+
 volumes:
   mysql_data:
   redis_data:
   minio_data:
+  prometheus_data:
+  grafana_data:

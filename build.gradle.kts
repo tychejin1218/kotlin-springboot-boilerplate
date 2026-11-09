@@ -56,6 +56,9 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
     runtimeOnly("com.mysql:mysql-connector-j")
 
+    // 설정값 암호화 (ENC(...))
+    implementation("com.github.ulisesbocchio:jasypt-spring-boot-starter:4.0.4")
+
     // JWT
     val jjwtVersion = "0.12.6"
     implementation("io.jsonwebtoken:jjwt-api:$jjwtVersion")
@@ -158,5 +161,29 @@ configurations.matching { it.name == "detekt" }.configureEach {
                     .getSupportedKotlinVersion(),
             )
         }
+    }
+}
+
+// Jasypt ENC() 값 생성. JasyptConfig 와 같은 알고리즘으로 암호화하고 암호문만 출력한다 (yml 에는 ENC(...) 로 감싸 넣는다)
+// 예) ./gradlew jasyptEncrypt --args="<비밀번호> <평문>"
+tasks.register<JavaExec>("jasyptEncrypt") {
+    group = "jasypt"
+    description = "Jasypt ENC() 값 생성. 사용법: ./gradlew jasyptEncrypt --args=\"<비밀번호> <평문>\""
+    classpath = sourceSets.main.get().runtimeClasspath
+    mainClass = "org.jasypt.intf.cli.JasyptPBEStringEncryptionCLI"
+    doFirst {
+        val cliArgs = args.orEmpty()
+        if (cliArgs.size != 2) throw GradleException("사용법: ./gradlew jasyptEncrypt --args=\"<비밀번호> <평문>\"")
+        args =
+            listOf(
+                "password=${cliArgs[0]}",
+                "input=${cliArgs[1]}",
+                "algorithm=PBEWITHHMACSHA512ANDAES_256",
+                "keyObtentionIterations=1000",
+                "saltGeneratorClassName=org.jasypt.salt.RandomSaltGenerator",
+                "ivGeneratorClassName=org.jasypt.iv.RandomIvGenerator",
+                "stringOutputType=base64",
+                "verbose=false",
+            )
     }
 }

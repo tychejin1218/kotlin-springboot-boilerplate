@@ -49,6 +49,11 @@ jwt:
   session-idle-timeout-ms: ${JWT_SESSION_IDLE_TIMEOUT_MS:1800000}          # 미활동 만료 30분
   session-absolute-timeout-ms: ${JWT_SESSION_ABSOLUTE_TIMEOUT_MS:43200000} # 최초 로그인 기준 절대 만료 12시간
 
+# Jasypt (ENC(...) 복호화). 비밀번호는 JASYPT_ENCRYPTOR_PASSWORD 환경변수로 주입한다
+jasypt:
+  encryptor:
+    bean: jasyptStringEncryptor
+
 # Actuator 설정
 management:
   endpoints:

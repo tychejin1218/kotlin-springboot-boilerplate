@@ -43,3 +43,8 @@ aws:
     access-key: minioadmin
     secret-key: minioadmin
     create-bucket-on-startup: true
+
+# Jasypt 로컬 비밀번호 (dev/stg/prd 는 JASYPT_ENCRYPTOR_PASSWORD 환경변수)
+jasypt:
+  encryptor:
+    password: local-default

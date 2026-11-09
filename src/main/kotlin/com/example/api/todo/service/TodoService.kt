@@ -14,6 +14,8 @@ import com.example.api.todo.dto.TodoImageUpdateRequest
 import com.example.api.todo.dto.TodoListRequest
 import com.example.api.todo.dto.TodoResponse
 import com.example.api.todo.dto.toResponse
+import io.micrometer.core.instrument.Counter
+import io.micrometer.core.instrument.MeterRegistry
 import org.springframework.cache.annotation.CacheEvict
 import org.springframework.cache.annotation.Cacheable
 import org.springframework.context.ApplicationEventPublisher
@@ -36,7 +38,15 @@ class TodoService(
     private val todoRepository: TodoRepository,
     private val memberRepository: MemberRepository,
     private val eventPublisher: ApplicationEventPublisher,
+    meterRegistry: MeterRegistry,
 ) {
+    // 비즈니스 지표 예시. /actuator/prometheus 에 todo_create_count_total 로 노출된다
+    private val todoCreateCounter =
+        Counter
+            .builder("todo.create.count")
+            .description("할 일 생성 횟수")
+            .register(meterRegistry)
+
     @Cacheable(
         cacheNames = [CacheConfig.TODO_LIST],
         key =
@@ -67,7 +77,9 @@ class TodoService(
     ): TodoResponse {
         // 토큰은 유효하지만 그 사이 탈퇴한 회원
         val member = memberRepository.findByEmail(email) ?: throw ApiException(ApiStatus.AUTH_UNAUTHORIZED)
-        return todoRepository.save(Todo(title = request.title, member = member)).toResponse()
+        val todo = todoRepository.save(Todo(title = request.title, member = member))
+        todoCreateCounter.increment()
+        return todo.toResponse()
     }
 
     @CacheEvict(cacheNames = [CacheConfig.TODO_LIST], allEntries = true)

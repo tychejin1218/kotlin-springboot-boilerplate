@@ -12,6 +12,7 @@ import com.example.api.todo.dto.TodoImageUpdateRequest
 import com.example.api.todo.dto.TodoListRequest
 import com.example.api.todo.dto.TodoSort
 import com.example.api.todo.dto.TodoStatus
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry
 import io.mockk.every
 import io.mockk.justRun
 import io.mockk.mockk
@@ -31,7 +32,8 @@ class TodoServiceTest {
     private val todoRepository = mockk<TodoRepository>()
     private val memberRepository = mockk<MemberRepository>()
     private val eventPublisher = mockk<ApplicationEventPublisher>()
-    private val todoService = TodoService(todoRepository, memberRepository, eventPublisher)
+    private val meterRegistry = SimpleMeterRegistry()
+    private val todoService = TodoService(todoRepository, memberRepository, eventPublisher, meterRegistry)
     private val member =
         Member(email = EMAIL, name = "홍길동", password = "x").also {
             ReflectionTestUtils.setField(it, "id", 7L)
@@ -74,6 +76,7 @@ class TodoServiceTest {
 
         assertThat(response.id).isEqualTo(1L)
         assertThat(response.completed).isFalse()
+        assertThat(meterRegistry.counter("todo.create.count").count()).isEqualTo(1.0)
     }
 
     @Test

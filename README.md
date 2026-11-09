@@ -16,6 +16,8 @@ Java 에서 넘어왔다면 [Java 개발자를 위한 Kotlin 가이드](docs/kot
 | 인증 | Spring Security + JWT (JJWT 0.12.6), Refresh 토큰은 Redis 7 |
 | 메일 | Spring Mail (로컬: MailHog) |
 | API 문서 | SpringDoc OpenAPI 3.2.0 (local/dev/stg) |
+| 설정 암호화 | Jasypt 4.0.4 (PBEWITHHMACSHA512ANDAES_256) |
+| 모니터링 | Actuator + Micrometer Prometheus, Prometheus/Grafana (compose) |
 | 테스트 | JUnit 5, MockMvc Kotlin DSL, MockK/springmockk, Testcontainers |
 | 정적 분석 | ktlint 1.8.0 + detekt 2.0.0-alpha.6, JaCoCo |
 
@@ -26,7 +28,14 @@ docker compose up -d          # MySQL(3307), Redis(6380), MailHog(SMTP 1026, 웹
 ./gradlew bootRun             # http://localhost:9091/api/health
 ```
 
-Java 보일러플레이트 compose 와 동시에 띄울 수 있도록 호스트 포트를 한 칸씩 비켜 두었습니다.
+Java 보일러플레이트 compose 와 동시에 띄울 수 있도록 호스트 포트를 비켜 두었습니다.
+
+```bash
+docker compose --profile app up -d --build    # 앱도 컨테이너로 (Dockerfile, 비root 실행)
+docker compose --profile monitoring up -d     # Prometheus http://localhost:9190, Grafana http://localhost:3001 (admin/admin)
+```
+
+Prometheus 는 호스트의 `:9091/api/actuator/prometheus` 를 수집합니다. 예시 비즈니스 지표로 `todo_create_count_total`(할 일 생성 횟수)이 있습니다.
 
 시드 회원 (비밀번호 모두 `Test1234!`): `user1@example.com`, `user2@example.com`, `admin@example.com`(관리자). 가입 인증 메일은 http://localhost:8026 에서 확인합니다.
 
@@ -57,6 +66,7 @@ CORS 허용 오리진은 `CORS_ALLOWED_ORIGINS`(쉼표 구분)로 주입합니�
 | `JWT_ACCESS_TOKEN_VALIDITY_MS` | Access 토큰 유효 기간. 미활동 만료보다 짧아야 함 | 900000 (15분) |
 | `JWT_SESSION_IDLE_TIMEOUT_MS` | 미활동 만료. Refresh 토큰 Redis TTL, 재발급마다 연장 | 1800000 (30분) |
 | `JWT_SESSION_ABSOLUTE_TIMEOUT_MS` | 최초 로그인 기준 절대 만료 | 43200000 (12시간) |
+| `JASYPT_ENCRYPTOR_PASSWORD` | `ENC(...)` 값 복호화 비밀번호. local 은 `local-default` | - |
 | `RATE_LIMIT_TRUST_FORWARDED_HEADERS` | X-Forwarded-For 를 클라이언트 IP 로 사용 (신뢰할 수 있는 프록시 뒤에서만) | false |
 
 ## 구조
@@ -107,6 +117,16 @@ todo, 파일 업로드, notification, admin 은 참고용 예제입니다 (Java 
 
 todo 와 notification 은 서로 엮여 있습니다. todo 를 지우면 `TodoCompleteEvent` 를 받는 쪽도 함께 지우거나 다른 이벤트로 바꿉니다.
 예제 통합 테스트는 `ExampleFeatureFlowTest` 에 모여 있으니 지운 예제의 테스트를 함께 지웁니다.
+
+## 설정값 암호화 (Jasypt)
+
+yml 에 민감한 값을 `ENC(암호문)` 으로 넣으면 시작할 때 복호화합니다. 환경변수로 주입하기 어려운 값에 씁니다.
+
+```bash
+./gradlew jasyptEncrypt --args="<비밀번호> <평문>"   # 암호문만 출력. yml 에는 ENC(...) 로 감싸 넣는다
+```
+
+랜덤 Salt/IV 를 쓰므로 같은 평문도 실행할 때마다 다른 암호문이 나오고, 모두 복호화됩니다.
 
 ## Swagger UI / 추적 ID
 
@@ -162,4 +182,4 @@ docker exec -i kotlin-boilerplate-mysql mysql -uroot -proot < docker/init.sql
 5. ~~인증: Member, Spring Security, JWT, Redis, 메일~~
 6. ~~캐시, Rate Limit~~
 7. ~~예제: 파일 업로드(S3), 알림(SSE), 관리자 API~~
-8. 운영: Jasypt, Dockerfile, 모니터링
+8. ~~운영: Jasypt, Dockerfile, 모니터링~~
