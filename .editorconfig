@@ -16,3 +16,7 @@ ktlint_function_naming_ignore_when_annotated_with = Test, ParameterizedTest
 
 [*.{yml,yaml,xml,sql}]
 indent_size = 2
+
+# {기능}/dto/XxxDto.kt 는 DTO 가 하나뿐이어도 기능 이름으로 둔다 (detekt MatchingDeclarationName 도 같은 예외)
+[**/dto/*.kt]
+ktlint_standard_filename = disabled

@@ -58,6 +58,17 @@ data class TodoCreateRequest(
     val title: String,
 )
 
+/** 할 일 이미지 URL 변경 요청 [예제: file-upload] */
+data class TodoImageUpdateRequest(
+    @Schema(
+        description = "Presigned URL 로 업로드한 파일의 objectUrl",
+        example = "http://localhost:9010/boilerplate-bucket/uuid/image.png",
+    )
+    @NotBlank(message = "이미지 URL을 입력해주세요.")
+    @Size(max = 500, message = "이미지 URL은 500자 이내여야 합니다.")
+    val imageUrl: String,
+)
+
 /** 할 일 응답 */
 data class TodoResponse(
     @Schema(description = "할 일 ID", example = "1")
@@ -66,6 +77,11 @@ data class TodoResponse(
     val title: String,
     @Schema(description = "완료 여부", example = "false")
     val completed: Boolean,
+    @Schema(
+        description = "첨부 이미지 URL [예제: file-upload]",
+        example = "http://localhost:9010/boilerplate-bucket/uuid/image.png",
+    )
+    val imageUrl: String? = null,
 )
 
 fun Todo.toResponse(): TodoResponse =
@@ -73,4 +89,5 @@ fun Todo.toResponse(): TodoResponse =
         id = checkNotNull(id) { "저장되지 않은 Todo 는 응답으로 변환할 수 없습니다." },
         title = title,
         completed = completed,
+        imageUrl = imageUrl,
     )

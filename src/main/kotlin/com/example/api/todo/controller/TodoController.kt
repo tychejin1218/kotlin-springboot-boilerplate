@@ -3,6 +3,7 @@ package com.example.api.todo.controller
 import com.example.api.common.response.BaseResponse
 import com.example.api.common.response.PageResponse
 import com.example.api.todo.dto.TodoCreateRequest
+import com.example.api.todo.dto.TodoImageUpdateRequest
 import com.example.api.todo.dto.TodoListRequest
 import com.example.api.todo.dto.TodoResponse
 import com.example.api.todo.service.TodoService
@@ -50,6 +51,14 @@ class TodoController(
         authentication: Authentication,
         @PathVariable id: Long,
     ): BaseResponse<TodoResponse> = BaseResponse.ok(todoService.updateTodoComplete(authentication.name, id))
+
+    // [예제: file-upload]
+    @PatchMapping("/{id}/image")
+    override fun updateTodoImage(
+        authentication: Authentication,
+        @PathVariable id: Long,
+        @Valid @RequestBody request: TodoImageUpdateRequest,
+    ): BaseResponse<TodoResponse> = BaseResponse.ok(todoService.updateTodoImage(authentication.name, id, request))
 
     @DeleteMapping("/{id}")
     override fun deleteTodo(

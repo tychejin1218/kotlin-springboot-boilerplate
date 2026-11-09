@@ -66,7 +66,7 @@ class CacheConfig {
         private val DEFAULT_TTL = java.time.Duration.ofMinutes(30)
         private const val SCAN_BATCH_SIZE = 1000
 
-        /** 할 일 목록 캐시 (회원별·조회 조건별) */
+        /** 할 일 목록 캐시 (회원별·조회 조건별) [예제: todo] */
         const val TODO_LIST = "todo:list"
     }
 }

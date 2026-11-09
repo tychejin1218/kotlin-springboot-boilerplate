@@ -7,7 +7,7 @@ USE boilerplate_db;
 SET NAMES utf8mb4;
 
 -- FK 의존 순서의 역순으로 삭제
-DROP TABLE IF EXISTS todo;
+DROP TABLE IF EXISTS todo;  -- [예제: todo]
 DROP TABLE IF EXISTS member;
 
 -- member : 회원
@@ -26,11 +26,12 @@ CREATE TABLE member (
   UNIQUE KEY uq_member_email (email)
 ) COMMENT = '회원';
 
--- todo : 할 일 목록 (member_id 로 소유자 식별)
+-- todo : 할 일 목록 (member_id 로 소유자 식별) [예제: todo]
 CREATE TABLE todo (
   id         BIGINT       NOT NULL AUTO_INCREMENT COMMENT '할 일 PK',
   title      VARCHAR(200) NOT NULL                COMMENT '할 일 내용',
   completed  TINYINT(1)   NOT NULL DEFAULT 0      COMMENT '완료 여부 (0: 미완료, 1: 완료)',
+  image_url  VARCHAR(500)          DEFAULT NULL   COMMENT '첨부 이미지 URL [예제: file-upload]',
   member_id  BIGINT       NOT NULL                COMMENT '소유 회원 FK',
   created_at DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP                             COMMENT '생성일시 (UTC)',
   updated_at DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '수정일시 (UTC)',
@@ -49,6 +50,7 @@ INSERT INTO member (email, name, password, role, email_verified) VALUES
 
 UPDATE member SET deleted_at = '2026-01-01 00:00:00' WHERE email = 'deleted@example.com';
 
+-- [예제: todo]
 INSERT INTO todo (title, completed, member_id) VALUES
   ('Spring Boot 프로젝트 세팅', 1, 1),
   ('JWT 인증 구현',             1, 1),

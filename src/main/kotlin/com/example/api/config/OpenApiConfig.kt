@@ -44,8 +44,17 @@ class OpenApiConfig {
     @Bean
     fun userApi(): GroupedOpenApi = group("회원 API", "/users/**")
 
+    // [예제: todo]
     @Bean
     fun todoApi(): GroupedOpenApi = group("할 일 API", "/todos/**")
+
+    // [예제: file-upload]
+    @Bean
+    fun fileApi(): GroupedOpenApi = group("파일 API", "/files/**")
+
+    // [예제: admin]
+    @Bean
+    fun adminApi(): GroupedOpenApi = group("관리자 API", "/admin/**")
 
     private fun group(
         name: String,

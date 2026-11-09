@@ -36,6 +36,11 @@ class Todo(
     var completed: Boolean = false
         protected set
 
+    /** 첨부 이미지 URL [예제: file-upload] */
+    @Column(name = "image_url", length = 500)
+    var imageUrl: String? = null
+        protected set
+
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "member_id", nullable = false)
     var member: Member = member
@@ -44,5 +49,10 @@ class Todo(
     /** 완료 처리 */
     fun complete() {
         completed = true
+    }
+
+    /** 첨부 이미지 변경 [예제: file-upload] */
+    fun updateImage(url: String) {
+        imageUrl = url
     }
 }

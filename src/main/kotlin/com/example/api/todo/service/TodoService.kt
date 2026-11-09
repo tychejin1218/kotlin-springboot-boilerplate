@@ -8,12 +8,15 @@ import com.example.api.config.CacheConfig
 import com.example.api.domain.entity.Todo
 import com.example.api.domain.repository.MemberRepository
 import com.example.api.domain.repository.TodoRepository
+import com.example.api.notification.event.TodoCompleteEvent
 import com.example.api.todo.dto.TodoCreateRequest
+import com.example.api.todo.dto.TodoImageUpdateRequest
 import com.example.api.todo.dto.TodoListRequest
 import com.example.api.todo.dto.TodoResponse
 import com.example.api.todo.dto.toResponse
 import org.springframework.cache.annotation.CacheEvict
 import org.springframework.cache.annotation.Cacheable
+import org.springframework.context.ApplicationEventPublisher
 import org.springframework.data.domain.PageRequest
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -32,6 +35,7 @@ import org.springframework.transaction.annotation.Transactional
 class TodoService(
     private val todoRepository: TodoRepository,
     private val memberRepository: MemberRepository,
+    private val eventPublisher: ApplicationEventPublisher,
 ) {
     @Cacheable(
         cacheNames = [CacheConfig.TODO_LIST],
@@ -74,6 +78,21 @@ class TodoService(
     ): TodoResponse {
         val todo = findTodo(email, id)
         todo.complete()
+        // [예제: notification] 완료 알림. 커밋 뒤에 발행된다 (NotificationEventListener)
+        eventPublisher.publishEvent(TodoCompleteEvent(checkNotNull(todo.member.id), checkNotNull(todo.id), todo.title))
+        return todo.toResponse()
+    }
+
+    /** 첨부 이미지 변경 [예제: file-upload] */
+    @CacheEvict(cacheNames = [CacheConfig.TODO_LIST], allEntries = true)
+    @Transactional
+    fun updateTodoImage(
+        email: String,
+        id: Long,
+        request: TodoImageUpdateRequest,
+    ): TodoResponse {
+        val todo = findTodo(email, id)
+        todo.updateImage(request.imageUrl)
         return todo.toResponse()
     }
 

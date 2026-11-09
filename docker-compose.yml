@@ -30,6 +30,22 @@ services:
       - "1026:1025"  # SMTP
       - "8026:8025"  # 웹 UI (http://localhost:8026)
 
+  # [예제: file-upload] 파일 업로드 예제를 지우면 minio 서비스와 minio_data 볼륨도 지운다
+  minio:
+    # minio/minio 공개 이미지는 배포가 중단되어 Chainguard 가 같은 바이너리로 빌드한 이미지를 쓴다 (latest 만 무료)
+    image: cgr.dev/chainguard/minio:latest
+    container_name: kotlin-boilerplate-minio
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    ports:
+      - "9010:9000"  # S3 API
+      - "9011:9001"  # 웹 콘솔 (http://localhost:9011)
+    volumes:
+      - minio_data:/data
+    command: server /data --console-address ":9001"
+
 volumes:
   mysql_data:
   redis_data:
+  minio_data:

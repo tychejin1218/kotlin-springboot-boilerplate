@@ -62,6 +62,9 @@ dependencies {
     runtimeOnly("io.jsonwebtoken:jjwt-impl:$jjwtVersion")
     runtimeOnly("io.jsonwebtoken:jjwt-jackson:$jjwtVersion")
 
+    // AWS S3 Presigned URL [예제: file-upload]
+    implementation("software.amazon.awssdk:s3:2.33.7")
+
     // Kotlin JDSL: 타입 안전한 JPQL 쿼리 (동적 쿼리 포함). Spring Boot 4 는 boot4-support 모듈을 쓴다
     val kotlinJdslVersion = "3.9.0"
     implementation("com.linecorp.kotlin-jdsl:jpql-dsl:$kotlinJdslVersion")
@@ -79,6 +82,7 @@ dependencies {
     testImplementation("org.testcontainers:testcontainers-mysql")
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit5")
     testImplementation("io.mockk:mockk:1.14.11")
+    testImplementation("org.awaitility:awaitility-kotlin")
     testImplementation("com.ninja-squad:springmockk:5.0.1")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }

@@ -3,10 +3,12 @@ package com.example.api
 import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.boot.context.properties.ConfigurationPropertiesScan
 import org.springframework.boot.runApplication
+import org.springframework.boot.security.autoconfigure.UserDetailsServiceAutoConfiguration
 import java.time.ZoneOffset
 import java.util.TimeZone
 
-@SpringBootApplication
+// JWT 로만 인증하므로 기본 사용자(콘솔에 찍히는 generated security password)를 만들지 않는다
+@SpringBootApplication(exclude = [UserDetailsServiceAutoConfiguration::class])
 @ConfigurationPropertiesScan
 class ApiApplication
 

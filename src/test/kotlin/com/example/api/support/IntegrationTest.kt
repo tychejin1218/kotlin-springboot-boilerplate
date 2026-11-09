@@ -51,6 +51,8 @@ abstract class IntegrationTest {
             registry.add("spring.data.redis.port") { redis.getMappedPort(REDIS_PORT) }
             // 모든 테스트가 같은 IP 로 로그인하므로 Rate Limit 에 걸리지 않게 늘린다 (RateLimitTest 는 따로 확인)
             registry.add("rate-limit.max-requests-per-minute") { 10_000 }
+            // 테스트에서는 MinIO 를 띄우지 않는다. Presigned URL 은 서명만 하므로 MinIO 없이도 만들 수 있다
+            registry.add("aws.s3.create-bucket-on-startup") { false }
         }
 
         private const val REDIS_PORT = 6379

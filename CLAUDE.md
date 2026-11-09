@@ -63,6 +63,7 @@ Java 보일러플레이트에서 넘어올 때 바뀌는 점:
 - 로그에 이메일 같은 개인정보를 남기지 않는다. 회원은 MDC `memberId` 로 식별된다
 - 캐시는 `@Cacheable(cacheNames = [CacheConfig.XXX])` + 변경 메서드에 `@CacheEvict`. 캐시 이름은 `CacheConfig` 상수로 둔다. 캐시 키에 이메일이 들어가면 해시로 바꾼다(`TodoService.getTodoList` 참고). 캐시할 값의 타입은 `com.example.api` 패키지 클래스와 표준 컬렉션이어야 한다(`CacheConfig` 의 타입 제한)
 - Rate Limit 경로는 `WebConfig.addInterceptors` 에 추가한다
+- 예제 기능(todo, 파일 업로드, notification, admin)이 공통 파일에 등록되는 곳에는 `[예제: 기능]` 주석을 붙이고, README 의 "예제 기능 제거 방법" 표를 함께 고친다
 
 ### JPA Entity
 

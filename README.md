@@ -20,7 +20,7 @@
 ## 실행
 
 ```bash
-docker compose up -d          # MySQL(3307), Redis(6380), MailHog(SMTP 1026, 웹 8026)
+docker compose up -d          # MySQL(3307), Redis(6380), MailHog(SMTP 1026, 웹 8026), MinIO(9010, 콘솔 9011)
 ./gradlew bootRun             # http://localhost:9091/api/health
 ```
 
@@ -72,8 +72,9 @@ src/main/kotlin/com/example/api/
 │   └── type/         ApiStatus (응답 코드 = enum 이름, HTTP 상태), RedisKeys (키 규칙)
 ├── config/           MainDataSourceConfig (R/W 분리), JpaConfig (Auditing), WebConfig (CORS, enum 변환),
 │   │                 AsyncConfig (MDC 전파), OpenApiConfig (Swagger 그룹)
+│   ├── aws/          S3Config, LocalS3Initializer (MinIO 버킷 생성)
 │   ├── jwt/          JwtTokenProvider, JwtProperties
-│   ├── redis/        RedisConfig (클러스터 Replica 읽기)
+│   ├── redis/        RedisConfig (클러스터 Replica 읽기), RedisPubSubConfig
 │   ├── CacheConfig   Redis 캐시 (APP:CACHE:{캐시 이름}:{키}, 즉시 쓰기)
 │   ├── security/     SecurityConfig, JwtAuthenticationFilter
 │   └── web/          TraceIdFilter (X-Trace-Id, MDC), LoggingFilter (요청 요약 로그), RateLimitInterceptor
@@ -81,8 +82,29 @@ src/main/kotlin/com/example/api/
 │   ├── entity/       BaseAudit (created_at/updated_at/deleted_at), Member, Todo
 │   └── repository/   MemberRepository, TodoRepository (JpaRepository + KotlinJdslJpqlExecutor)
 ├── todo/             controller (+ ControllerDocs) / service / dto
-└── user/             controller / service / dto
+├── user/             controller / service / dto
+├── file/             Presigned URL 발급            [예제: file-upload]
+├── notification/     SSE + Redis Pub/Sub 알림      [예제: notification]
+└── admin/            관리자 API (@PreAuthorize)    [예제: admin]
 ```
+
+## 예제 기능 제거 방법
+
+todo, 파일 업로드, notification, admin 은 참고용 예제입니다 (Java 보일러플레이트, FE 와 같은 구성).
+공통 파일에 걸린 등록 지점에는 `[예제: ...]` 주석이 붙어 있어 `grep -rn "\[예제: notification\]" .` 처럼 찾아 아래 디렉토리와 함께 지우면 됩니다.
+지운 뒤 `./gradlew clean build` 로 컴파일, ktlint, detekt, 테스트가 모두 통과하는지 확인합니다.
+
+경로는 `src/main/kotlin/com/example/api/` (테스트는 `src/test/kotlin/com/example/api/`) 기준입니다.
+
+| 예제 | 지울 디렉토리/파일 | 지울 등록 지점 |
+|---|---|---|
+| todo | `todo/`, `domain/entity/Todo.kt`, `domain/repository/TodoRepository.kt`, 테스트 `todo/`, `domain/repository/TodoRepositoryTest.kt`, `AuthFlowTest` 의 할 일 테스트 | `ApiStatus.TODO_NOT_FOUND`, `OpenApiConfig.todoApi`, `CacheConfig.TODO_LIST`, `docker/init.sql` 의 todo DROP/CREATE/INSERT |
+| 파일 업로드 | `file/`, `config/aws/`, 테스트 `file/` | `ApiStatus.FILE_CONTENT_TYPE_INVALID`, `OpenApiConfig.fileApi`, `build.gradle.kts` 의 `awssdk:s3`, `environment-{profile}.yml` 의 `aws.s3`, `docker-compose.yml` 의 `minio` 서비스와 `minio_data` 볼륨, `IntegrationTest` 의 `aws.s3.create-bucket-on-startup`. todo 를 남길 때는 `Todo.imageUrl`/`updateImage`, `TodoImageUpdateRequest`, `TodoResponse.imageUrl`, `PATCH /todos/{id}/image`(컨트롤러·Docs·서비스), `todo.image_url` 컬럼도 지운다 |
+| notification | `notification/`, `config/redis/RedisPubSubConfig.kt` | `RedisKeys.NOTIFICATION_CHANNEL`, `TodoService` 의 `TodoCompleteEvent` 발행 줄과 `eventPublisher` 필드·import |
+| admin | `admin/` | `OpenApiConfig.adminApi`. `MemberRole`, `@EnableMethodSecurity`, `ExceptionAdvice` 의 403 처리는 공통 기능이라 남긴다 |
+
+todo 와 notification 은 서로 엮여 있습니다. todo 를 지우면 `TodoCompleteEvent` 를 받는 쪽도 함께 지우거나 다른 이벤트로 바꿉니다.
+예제 통합 테스트는 `ExampleFeatureFlowTest` 에 모여 있으니 지운 예제의 테스트를 함께 지웁니다.
 
 ## Swagger UI / 추적 ID
 
@@ -109,9 +131,14 @@ src/main/kotlin/com/example/api/
 | GET | `/api/todos/{id}` | 단건 | O |
 | POST | `/api/todos` | 생성 `{"title": "..."}` | O |
 | PATCH | `/api/todos/{id}/complete` | 완료 처리 | O |
+| PATCH | `/api/todos/{id}/image` | 첨부 이미지 URL 저장 `{"imageUrl": "..."}` | O |
 | DELETE | `/api/todos/{id}` | 논리 삭제 (`deleted_at`) | O |
+| GET | `/api/files/presigned-url?fileName=&contentType=` | S3 업로드용 Presigned URL (이미지만) | O |
+| GET | `/api/notifications/subscribe` | 실시간 알림 구독 (SSE) | O |
+| GET | `/api/admin/members` | 전체 회원 목록 (ROLE_ADMIN) | O |
 
 - 할 일 목록은 Redis 에 30분 캐시하고, 할 일을 바꾸면 목록 캐시를 비웁니다.
+- 할 일을 완료하면 SSE(`GET /api/notifications/subscribe`, `text/event-stream`)로 `notification` 이벤트를 보냅니다. 서버가 여러 대여도 Redis Pub/Sub 으로 전달됩니다.
 - 로그인·회원가입은 IP·경로마다 분당 10회로 제한하고, 넘으면 429 `SYSTEM_RATE_LIMIT_EXCEEDED` 로 응답합니다.
 
 API 규격(경로·파라미터·응답 JSON·응답 코드)은 Java 보일러플레이트와 같게 유지해 `react-boilerplate`를 그대로 붙일 수 있게 한다.
@@ -132,5 +159,5 @@ docker exec -i kotlin-boilerplate-mysql mysql -uroot -proot < docker/init.sql
 4. ~~웹 공통: 추적 ID, 요청 로그, CORS, SpringDoc, 비동기 MDC 전파~~
 5. ~~인증: Member, Spring Security, JWT, Redis, 메일~~
 6. ~~캐시, Rate Limit~~
-7. 예제: 파일 업로드(S3), 알림(SSE), 관리자 API
+7. ~~예제: 파일 업로드(S3), 알림(SSE), 관리자 API~~
 8. 운영: Jasypt, Dockerfile, 모니터링

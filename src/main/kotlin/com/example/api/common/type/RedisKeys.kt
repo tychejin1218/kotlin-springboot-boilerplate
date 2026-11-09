@@ -32,6 +32,9 @@ enum class RedisKeys(
 
     /** {IP}:{URI} */
     RATE_LIMIT("RATE_LIMIT", Duration.ofMinutes(1)),
+
+    /** {회원 번호}, Pub/Sub 채널 (TTL 없음) [예제: notification] */
+    NOTIFICATION_CHANNEL("NOTIFICATION:CHANNEL", null),
     ;
 
     /** `APP:{path}:{id1}:{id2}...`. null 식별자는 빈 문자열 */

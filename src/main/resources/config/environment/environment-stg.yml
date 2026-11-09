@@ -41,3 +41,10 @@ spring:
     properties:
       mail.smtp.auth: ${MAIL_SMTP_AUTH:true}
       mail.smtp.starttls.enable: ${MAIL_SMTP_STARTTLS:true}
+
+# [예제: file-upload] S3. 자격증명은 IAM Role(DefaultCredentialsProvider)로 찾는다
+aws:
+  s3:
+    region: ${AWS_REGION:ap-northeast-2}
+    bucket-name: ${AWS_S3_BUCKET_NAME}
+    presigned-url-expiry-minutes: 5

@@ -4,6 +4,7 @@ import com.example.api.common.response.BaseResponse
 import com.example.api.common.response.ErrorResponse
 import com.example.api.common.response.PageResponse
 import com.example.api.todo.dto.TodoCreateRequest
+import com.example.api.todo.dto.TodoImageUpdateRequest
 import com.example.api.todo.dto.TodoListRequest
 import com.example.api.todo.dto.TodoResponse
 import io.swagger.v3.oas.annotations.Operation
@@ -20,7 +21,7 @@ import org.springframework.security.core.Authentication
  *
  * 문서 어노테이션은 이 인터페이스에 모아 두고, 컨트롤러는 매핑과 위임만 남긴다.
  */
-@Tag(name = "할 일", description = "할 일 목록 조회/추가/완료/삭제 API")
+@Tag(name = "할 일", description = "할 일 목록 조회/추가/완료/이미지/삭제 API")
 interface TodoControllerDocs {
     @Operation(summary = "할 일 목록 조회", description = "로그인한 회원의 할 일 목록을 페이지 단위로 조회합니다.")
     @ApiResponse(
@@ -96,6 +97,19 @@ interface TodoControllerDocs {
     fun updateTodoComplete(
         @Parameter(hidden = true) authentication: Authentication,
         id: Long,
+    ): BaseResponse<TodoResponse>
+
+    @Operation(summary = "할 일 이미지 변경", description = "Presigned URL 로 업로드한 뒤 objectUrl 을 저장한다. [예제: file-upload]")
+    @ApiResponse(responseCode = "200", description = "변경 성공")
+    @ApiResponse(
+        responseCode = "404",
+        description = "TODO_NOT_FOUND",
+        content = [Content(schema = Schema(implementation = ErrorResponse::class))],
+    )
+    fun updateTodoImage(
+        @Parameter(hidden = true) authentication: Authentication,
+        id: Long,
+        request: TodoImageUpdateRequest,
     ): BaseResponse<TodoResponse>
 
     @Operation(summary = "할 일 삭제", description = "할 일을 논리 삭제합니다.")

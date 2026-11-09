@@ -32,3 +32,14 @@ spring:
   mail:
     host: localhost
     port: 1026
+
+# [예제: file-upload] S3 (로컬은 MinIO: docker compose up -d minio, 콘솔 http://localhost:9011)
+aws:
+  s3:
+    region: us-east-1
+    bucket-name: boilerplate-bucket
+    presigned-url-expiry-minutes: 5
+    endpoint: http://localhost:9010
+    access-key: minioadmin
+    secret-key: minioadmin
+    create-bucket-on-startup: true

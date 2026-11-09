@@ -6,16 +6,21 @@ import com.example.api.domain.entity.Member
 import com.example.api.domain.entity.Todo
 import com.example.api.domain.repository.MemberRepository
 import com.example.api.domain.repository.TodoRepository
+import com.example.api.notification.event.TodoCompleteEvent
 import com.example.api.todo.dto.TodoCreateRequest
+import com.example.api.todo.dto.TodoImageUpdateRequest
 import com.example.api.todo.dto.TodoListRequest
 import com.example.api.todo.dto.TodoSort
 import com.example.api.todo.dto.TodoStatus
 import io.mockk.every
+import io.mockk.justRun
 import io.mockk.mockk
 import io.mockk.slot
+import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Test
+import org.springframework.context.ApplicationEventPublisher
 import org.springframework.data.domain.PageImpl
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Pageable
@@ -25,8 +30,12 @@ import org.springframework.test.util.ReflectionTestUtils
 class TodoServiceTest {
     private val todoRepository = mockk<TodoRepository>()
     private val memberRepository = mockk<MemberRepository>()
-    private val todoService = TodoService(todoRepository, memberRepository)
-    private val member = Member(email = EMAIL, name = "홍길동", password = "x")
+    private val eventPublisher = mockk<ApplicationEventPublisher>()
+    private val todoService = TodoService(todoRepository, memberRepository, eventPublisher)
+    private val member =
+        Member(email = EMAIL, name = "홍길동", password = "x").also {
+            ReflectionTestUtils.setField(it, "id", 7L)
+        }
 
     @Test
     fun `목록 조회는 회원 이메일과 상태 필터, 정렬을 리포지토리 조건으로 바꿔 넘긴다`() {
@@ -78,14 +87,30 @@ class TodoServiceTest {
     }
 
     @Test
-    fun `완료 처리하면 엔티티 상태가 바뀐다`() {
+    fun `완료 처리하면 엔티티 상태가 바뀌고 완료 이벤트를 발행한다`() {
         val todo = todo(1, "스프링 공부")
         every { todoRepository.findByIdAndMemberEmail(1, EMAIL) } returns todo
+        justRun { eventPublisher.publishEvent(any<Any>()) }
 
         val response = todoService.updateTodoComplete(EMAIL, 1)
 
         assertThat(todo.completed).isTrue()
         assertThat(response.completed).isTrue()
+        verify { eventPublisher.publishEvent(TodoCompleteEvent(memberId = 7, todoId = 1, todoTitle = "스프링 공부")) }
+    }
+
+    @Test
+    fun `이미지를 바꾸면 응답에 이미지 URL 이 담긴다`() {
+        every { todoRepository.findByIdAndMemberEmail(1, EMAIL) } returns todo(1, "스프링 공부")
+
+        val response =
+            todoService.updateTodoImage(
+                EMAIL,
+                1,
+                TodoImageUpdateRequest("http://localhost:9010/bucket/a.png"),
+            )
+
+        assertThat(response.imageUrl).isEqualTo("http://localhost:9010/bucket/a.png")
     }
 
     @Test

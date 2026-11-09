@@ -4,6 +4,7 @@ import com.example.api.common.component.RedisComponent
 import com.example.api.common.response.ErrorResponse
 import com.example.api.common.type.ApiStatus
 import com.example.api.config.jwt.JwtTokenProvider
+import jakarta.servlet.DispatcherType
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
 import org.springframework.context.annotation.Bean
@@ -17,6 +18,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.security.web.SecurityFilterChain
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter
+import org.springframework.security.web.util.matcher.DispatcherTypeRequestMatcher
 import tools.jackson.databind.ObjectMapper
 
 /**
@@ -47,6 +49,9 @@ class SecurityConfig(
                     { request, response, _ -> writeError(request, response, ApiStatus.PERMISSION_FORBIDDEN) }
             }
             authorizeHttpRequests {
+                // SSE 등 비동기 응답의 ASYNC 디스패치와 오류 페이지 디스패치는 처음 요청에서 이미 인가했다
+                authorize(DispatcherTypeRequestMatcher(DispatcherType.ASYNC), permitAll)
+                authorize(DispatcherTypeRequestMatcher(DispatcherType.ERROR), permitAll)
                 PERMIT_ALL_PATTERNS.forEach { authorize(it, permitAll) }
                 authorize(anyRequest, authenticated)
             }
