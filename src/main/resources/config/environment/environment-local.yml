@@ -1,0 +1,17 @@
+# CORS 허용 오리진 (React 개발 서버, nginx)
+cors:
+  allowed-origins: http://localhost:5173, http://localhost:80, http://localhost
+
+# SpringDoc (Swagger UI: /api/swagger-ui.html, 문서 JSON: /api/api-docs)
+springdoc:
+  api-docs:
+    enabled: true
+    path: /api-docs
+  swagger-ui:
+    enabled: true
+    path: /swagger-ui.html
+    groups-order: asc
+    tags-sorter: alpha
+    operations-sorter: alpha
+    display-request-duration: true
+    doc-expansion: none

@@ -1,18 +1,48 @@
 package com.example.api.config
 
+import com.example.api.config.web.TraceIdFilter
+import org.springframework.boot.context.properties.ConfigurationProperties
+import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Configuration
 import org.springframework.core.convert.converter.Converter
 import org.springframework.core.convert.converter.ConverterFactory
 import org.springframework.format.FormatterRegistry
+import org.springframework.web.servlet.config.annotation.CorsRegistry
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer
 
 /**
+ * CORS 설정 (`cors.*`)
+ *
+ * @property allowedOrigins 허용할 오리진. allowCredentials=true 이므로 "*" 대신 오리진을 명시한다
+ */
+@ConfigurationProperties("cors")
+data class CorsProperties(
+    val allowedOrigins: List<String> = emptyList(),
+)
+
+/**
  * Spring MVC 설정
+ *
+ * CORS 는 MVC 설정으로 등록한다. Spring Security 를 붙여도 `cors { }` 가 이 설정을 그대로 쓴다.
  */
 @Configuration(proxyBeanMethods = false)
-class WebConfig : WebMvcConfigurer {
+@EnableConfigurationProperties(CorsProperties::class)
+class WebConfig(
+    private val corsProperties: CorsProperties,
+) : WebMvcConfigurer {
     override fun addFormatters(registry: FormatterRegistry) {
         registry.addConverterFactory(CaseInsensitiveEnumConverterFactory())
+    }
+
+    override fun addCorsMappings(registry: CorsRegistry) {
+        registry
+            .addMapping("/**")
+            .allowedOriginPatterns(*corsProperties.allowedOrigins.toTypedArray())
+            .allowedMethods("*")
+            .allowedHeaders("*")
+            // 브라우저 JS 가 응답의 추적 ID 를 읽을 수 있도록 노출한다
+            .exposedHeaders(TraceIdFilter.HEADER)
+            .allowCredentials(true)
     }
 }
 

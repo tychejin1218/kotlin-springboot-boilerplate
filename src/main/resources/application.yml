@@ -42,19 +42,28 @@ management:
     tags:
       application: ${spring.application.name}
 
+# SpringDoc (API 문서, Swagger UI) 은 기본으로 끈다.
+# local/dev/stg 는 environment-{profile}.yml 에서 켜고 prd 는 끈 채로 둔다.
+# 새 프로파일을 추가해도 명시적으로 켜기 전까지는 API 문서가 노출되지 않는다.
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false
+
 ---
 spring.config.activate.on-profile: profiles-local
-spring.config.import: classpath:config/datasource/datasource-local.yml
+spring.config.import: classpath:config/datasource/datasource-local.yml, classpath:config/environment/environment-local.yml
 management.endpoint.health.show-details: always
 
 ---
 spring.config.activate.on-profile: profiles-dev
-spring.config.import: classpath:config/datasource/datasource-dev.yml
+spring.config.import: classpath:config/datasource/datasource-dev.yml, classpath:config/environment/environment-dev.yml
 
 ---
 spring.config.activate.on-profile: profiles-stg
-spring.config.import: classpath:config/datasource/datasource-stg.yml
+spring.config.import: classpath:config/datasource/datasource-stg.yml, classpath:config/environment/environment-stg.yml
 
 ---
 spring.config.activate.on-profile: profiles-prd
-spring.config.import: classpath:config/datasource/datasource-prd.yml
+spring.config.import: classpath:config/datasource/datasource-prd.yml, classpath:config/environment/environment-prd.yml

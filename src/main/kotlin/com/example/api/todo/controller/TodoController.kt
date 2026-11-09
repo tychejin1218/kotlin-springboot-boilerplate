@@ -7,6 +7,7 @@ import com.example.api.todo.dto.TodoListRequest
 import com.example.api.todo.dto.TodoResponse
 import com.example.api.todo.service.TodoService
 import jakarta.validation.Valid
+import org.springdoc.core.annotations.ParameterObject
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.ModelAttribute
@@ -24,29 +25,29 @@ import org.springframework.web.bind.annotation.RestController
 @RequestMapping("/todos")
 class TodoController(
     private val todoService: TodoService,
-) {
+) : TodoControllerDocs {
     @GetMapping
-    fun getTodoList(
-        @Valid @ModelAttribute request: TodoListRequest,
+    override fun getTodoList(
+        @Valid @ParameterObject @ModelAttribute request: TodoListRequest,
     ): BaseResponse<PageResponse<TodoResponse>> = BaseResponse.ok(todoService.getTodoList(request))
 
     @GetMapping("/{id}")
-    fun getTodo(
+    override fun getTodo(
         @PathVariable id: Long,
     ): BaseResponse<TodoResponse> = BaseResponse.ok(todoService.getTodo(id))
 
     @PostMapping
-    fun insertTodo(
+    override fun insertTodo(
         @Valid @RequestBody request: TodoCreateRequest,
     ): BaseResponse<TodoResponse> = BaseResponse.ok(todoService.insertTodo(request))
 
     @PatchMapping("/{id}/complete")
-    fun updateTodoComplete(
+    override fun updateTodoComplete(
         @PathVariable id: Long,
     ): BaseResponse<TodoResponse> = BaseResponse.ok(todoService.updateTodoComplete(id))
 
     @DeleteMapping("/{id}")
-    fun deleteTodo(
+    override fun deleteTodo(
         @PathVariable id: Long,
     ): BaseResponse<Unit> {
         todoService.deleteTodo(id)

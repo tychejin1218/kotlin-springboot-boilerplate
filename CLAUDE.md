@@ -50,6 +50,8 @@ Java 보일러플레이트에서 넘어올 때 바뀌는 점:
 - 예외는 `throw ApiException(ApiStatus.XXX)`. HTTP 상태는 `ApiStatus.httpStatus` 에 묶여 있어 던지는 곳에서 지정하지 않는다
 - 쿼리 파라미터용 enum 은 대문자 상수로 두고, API 문서·클라이언트는 소문자 값(`status=completed`)을 쓴다. `WebConfig`가 대소문자 구분 없이 변환한다
 - 컨트롤러 응답: `BaseResponse.ok(data)` / `BaseResponse.ok()` (반환 타입 `BaseResponse<Unit>`)
+- API 문서: Swagger 어노테이션은 `{기능}/controller/XxxControllerDocs` 인터페이스에 두고 컨트롤러가 구현한다(`override fun`). DTO 필드는 `@Schema(description, example)`, 쿼리 파라미터 DTO 는 `@ParameterObject`. 기능 패키지를 추가하면 `OpenApiConfig` 에 `GroupedOpenApi` 빈을 추가한다
+- 프로파일별 설정: DataSource 는 `config/datasource/`, 그 밖의 환경 설정은 `config/environment/environment-{profile}.yml`
 - 요청 DTO 검증: `@field:` 없이 `@NotBlank(message = "...")` 사용 (`-Xannotation-default-target=param-property`, start.spring.io 기본값). 메시지는 오류 응답에 그대로 노출된다
 
 ### JPA Entity

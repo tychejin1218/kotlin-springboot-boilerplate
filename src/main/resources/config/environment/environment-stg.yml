@@ -1,0 +1,17 @@
+# CORS 허용 오리진. 쉼표로 여러 개 지정
+cors:
+  allowed-origins: ${CORS_ALLOWED_ORIGINS}
+
+# SpringDoc (Swagger UI: /api/swagger-ui.html, 문서 JSON: /api/api-docs)
+springdoc:
+  api-docs:
+    enabled: true
+    path: /api-docs
+  swagger-ui:
+    enabled: true
+    path: /swagger-ui.html
+    groups-order: asc
+    tags-sorter: alpha
+    operations-sorter: alpha
+    display-request-duration: true
+    doc-expansion: none

@@ -41,6 +41,9 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-actuator")
     runtimeOnly("io.micrometer:micrometer-registry-prometheus")
 
+    // SpringDoc OpenAPI (Swagger UI). local/dev/stg 에서만 켠다 (application.yml 기본값은 꺼짐)
+    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:3.2.0")
+
     // Kotlin
     implementation("org.jetbrains.kotlin:kotlin-reflect")
     implementation("tools.jackson.module:jackson-module-kotlin")

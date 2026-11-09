@@ -33,9 +33,13 @@ docker compose up -d mysql    # 로컬 MySQL (localhost:3307)
 
 ## 프로파일
 
-`local` | `dev` | `stg` | `prd` — `src/main/resources/config/datasource/datasource-{profile}.yml`
+`local` | `dev` | `stg` | `prd` — 프로파일마다 두 파일을 읽습니다.
+
+- `config/datasource/datasource-{profile}.yml`: DataSource
+- `config/environment/environment-{profile}.yml`: CORS, SpringDoc 등 환경 설정
 
 dev/stg/prd 접속 정보는 환경변수(`DB_WRITER_JDBC_URL`, `DB_READER_JDBC_URL`, `DB_USERNAME`, `DB_PASSWORD`)로 주입합니다.
+CORS 허용 오리진은 `CORS_ALLOWED_ORIGINS`(쉼표 구분)로 주입합니다.
 
 ## 구조
 
@@ -48,12 +52,19 @@ src/main/kotlin/com/example/api/
 │   ├── exception/    ApiException
 │   ├── response/     BaseResponse, ErrorResponse, PageResponse (+ Page.toPageResponse)
 │   └── type/         ApiStatus (응답 코드 = enum 이름, HTTP 상태)
-├── config/           MainDataSourceConfig (R/W 분리), JpaConfig (Auditing)
+├── config/           MainDataSourceConfig (R/W 분리), JpaConfig (Auditing), WebConfig (CORS, enum 변환),
+│   │                 AsyncConfig (MDC 전파), OpenApiConfig (Swagger 그룹)
+│   └── web/          TraceIdFilter (X-Trace-Id, MDC), LoggingFilter (요청 요약 로그)
 ├── domain/
 │   ├── entity/       BaseAudit (created_at/updated_at/deleted_at), Todo
 │   └── repository/   TodoRepository (JpaRepository + KotlinJdslJpqlExecutor)
-└── todo/             controller / service / dto
+└── todo/             controller (+ ControllerDocs) / service / dto
 ```
+
+## Swagger UI / 추적 ID
+
+- Swagger UI: http://localhost:9091/api/swagger-ui.html (local/dev/stg 만, prd 는 꺼짐)
+- 모든 응답에 `X-Trace-Id` 헤더가 붙고 같은 값이 로그 줄 `[traceId]` 에 찍힙니다. 요청에 형식에 맞는 `X-Trace-Id` 를 보내면 그 값을 이어서 씁니다.
 
 ## API
 
@@ -79,4 +90,9 @@ docker exec -i kotlin-boilerplate-mysql mysql -uroot -proot < docker/init.sql
 
 1. ~~골격: Gradle Kotlin DSL, common, R/W DataSource, 정적 분석, Testcontainers~~
 2. ~~Todo 기능 (Entity → DTO → Repository(JPA + Kotlin JDSL) → Service → Controller → 테스트)~~
-3. 인프라 기능: 인증/JWT → Redis/캐시 → S3/파일 → 알림
+3. ~~응답 코드를 Java 와 같은 `ApiStatus` enum 이름으로 통일~~
+4. ~~웹 공통: 추적 ID, 요청 로그, CORS, SpringDoc, 비동기 MDC 전파~~
+5. 인증: Member, Spring Security, JWT, Redis, 메일
+6. 캐시, Rate Limit
+7. 예제: 파일 업로드(S3), 알림(SSE), 관리자 API
+8. 운영: Jasypt, Dockerfile, 모니터링
