@@ -68,4 +68,4 @@ Java 개발자용 상세 설명은 `docs/kotlin-for-java-developers.md`. Java �
 
 ## 커밋
 
-- `git config core.hooksPath .githooks` 를 한 번 해 두면 커밋할 때 `.githooks/pre-commit` 이 ktlint·detekt 를 돌린다 (테스트는 CI)
+- `git config core.hooksPath .githooks` 를 한 번 해 두면 커밋할 때 `.githooks/pre-commit` 이 ktlint·detekt 를 돌린다. 테스트는 커밋 전에 `./gradlew build` 로 직접 돌린다
