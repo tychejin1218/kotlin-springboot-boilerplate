@@ -48,7 +48,7 @@ class TodoServiceTest {
 
         assertThatThrownBy { todoService.getTodo(99) }
             .isInstanceOfSatisfying(ApiException::class.java) {
-                assertThat(it.apiStatus).isEqualTo(ApiStatus.NOT_FOUND)
+                assertThat(it.apiStatus).isEqualTo(ApiStatus.TODO_NOT_FOUND)
             }
     }
 

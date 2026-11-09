@@ -47,7 +47,7 @@ src/main/kotlin/com/example/api/
 │   ├── controller/   HealthController
 │   ├── exception/    ApiException
 │   ├── response/     BaseResponse, ErrorResponse, PageResponse (+ Page.toPageResponse)
-│   └── type/         ApiStatus (응답 코드 + 기본 HTTP 상태)
+│   └── type/         ApiStatus (응답 코드 = enum 이름, HTTP 상태)
 ├── config/           MainDataSourceConfig (R/W 분리), JpaConfig (Auditing)
 ├── domain/
 │   ├── entity/       BaseAudit (created_at/updated_at/deleted_at), Todo
@@ -66,6 +66,7 @@ src/main/kotlin/com/example/api/
 | DELETE | `/api/todos/{id}` | 논리 삭제 (`deleted_at`) |
 
 API 규격(경로·파라미터·응답 JSON·응답 코드)은 Java 보일러플레이트와 같게 유지해 `react-boilerplate`를 그대로 붙일 수 있게 한다.
+응답 본문은 `{"statusCode": "OK", "message": "성공", "data": ...}` 형태이며, 오류 시 `statusCode` 에 `ApiStatus` enum 이름(`TODO_NOT_FOUND` 등)이 들어갑니다.
 
 스키마는 `docker/init.sql` 하나로 관리합니다. docker compose 와 Testcontainers 가 같은 파일로 테이블을 만듭니다.
 이미 만들어진 로컬 볼륨에는 자동으로 다시 적용되지 않으므로 DDL 을 추가했다면 직접 실행합니다.

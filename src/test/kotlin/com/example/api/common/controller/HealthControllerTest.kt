@@ -15,7 +15,7 @@ class HealthControllerTest(
     fun `헬스 체크는 200 과 성공 코드를 반환한다`() {
         mockMvc.get("/health").andExpect {
             status { isOk() }
-            jsonPath("$.statusCode") { value(ApiStatus.OK.code) }
+            jsonPath("$.statusCode") { value("OK") }
             jsonPath("$.message") { value(ApiStatus.OK.message) }
         }
     }

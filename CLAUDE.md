@@ -38,15 +38,16 @@ Java 보일러플레이트에서 넘어올 때 바뀌는 점:
 | MyBatis / QueryDSL | Kotlin JDSL (아래) |
 | Checkstyle + PMD | ktlint + detekt |
 | Mockito / `@MockitoBean` | MockK / springmockk `@MockkBean` |
-| `ApiException(HttpStatus, ApiStatus)` (기본 400) | `ApiException(ApiStatus)` — HTTP 상태 기본값은 `ApiStatus.httpStatus` |
 
 - 단순 생성은 생성자 + named argument. 값을 계산해서 만들어야 할 때만 `companion object`의 팩토리 함수(`PageResponse.of(...)`)
 - 의존성 주입은 생성자 주입만 쓰고 프로퍼티는 `private val`
 - 컬렉션 반환 타입은 `List`/`Map` (Mutable 금지)
-- null 이 올 수 있는 조회 결과는 nullable 타입(`Todo?`)으로 받고 서비스에서 `?: throw ApiException(ApiStatus.NOT_FOUND)`. `!!` 금지
+- null 이 올 수 있는 조회 결과는 nullable 타입(`Todo?`)으로 받고 서비스에서 `?: throw ApiException(ApiStatus.TODO_NOT_FOUND)`. `!!` 금지
 - 스코프 함수는 객체 설정(`apply`)·null 처리(`?.let`) 정도로만 쓰고 중첩하지 않는다
 - 로거: `private val log = LoggerFactory.getLogger(javaClass)`, 메시지는 `{}` placeholder
 - API 규격(경로·파라미터 이름과 값·응답 JSON·응답 코드)은 Java 보일러플레이트와 같게 유지한다 (`react-boilerplate` 공용)
+- 응답 코드(`statusCode`)는 `ApiStatus` enum 이름이며 FE 와의 규약이다. 이름은 Java 보일러플레이트 `ApiStatus` 와 같게 두고 접두 규칙(`TODO_*`, `VALIDATION_*`, `SYSTEM_*` 등)을 따른다
+- 예외는 `throw ApiException(ApiStatus.XXX)`. HTTP 상태는 `ApiStatus.httpStatus` 에 묶여 있어 던지는 곳에서 지정하지 않는다
 - 쿼리 파라미터용 enum 은 대문자 상수로 두고, API 문서·클라이언트는 소문자 값(`status=completed`)을 쓴다. `WebConfig`가 대소문자 구분 없이 변환한다
 - 컨트롤러 응답: `BaseResponse.ok(data)` / `BaseResponse.ok()` (반환 타입 `BaseResponse<Unit>`)
 - 요청 DTO 검증: `@field:` 없이 `@NotBlank(message = "...")` 사용 (`-Xannotation-default-target=param-property`, start.spring.io 기본값). 메시지는 오류 응답에 그대로 노출된다

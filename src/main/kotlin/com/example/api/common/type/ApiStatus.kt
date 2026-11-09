@@ -5,31 +5,47 @@ import org.springframework.http.HttpStatus
 /**
  * API 응답 코드
  *
- * 8xx: 비즈니스 오류(ApiException), 9xx: 시스템 오류(ExceptionAdvice)
+ * 응답 본문의 `statusCode` 에는 enum 이름이 그대로 들어간다([code]).
+ * **enum 이름은 FE 와 맺은 API 규약이다.** Java 보일러플레이트와 이름을 같게 유지하고,
+ * 바꿀 때는 FE(`react-boilerplate/src/shared/constants/apiStatus.ts`, MSW 목업)도 함께 바꾼다.
  *
- * @property httpStatus 이 코드로 응답할 때의 기본 HTTP 상태. ApiException 에서 다르게 지정할 수 있다
+ * 명명 규칙:
+ * - 성공은 `OK` 하나뿐이다.
+ * - 도메인 접두: `AUTH_*`, `MEMBER_*`, `TODO_*`, `FILE_*`. 새 도메인은 같은 방식으로 접두를 만든다.
+ * - 공통 접두: 도메인과 무관한 사유는 `VALIDATION_*`, `PERMISSION_*`, `RESOURCE_*`, `SYSTEM_*`.
+ * - 접미: `*_NOT_FOUND`, `*_INVALID`, `*_DUPLICATED`, `*_FORBIDDEN`, `*_EXPIRED`, `*_LIMIT_EXCEEDED`, `*_FAILED`.
+ * - 코드 하나는 항상 같은 HTTP 상태([httpStatus])로 나간다. 예외를 던지는 곳에서는 HTTP 상태를 지정하지 않는다.
  */
 enum class ApiStatus(
-    val code: String,
-    val message: String,
     val httpStatus: HttpStatus,
+    val message: String,
 ) {
-    OK("200", "성공", HttpStatus.OK),
+    // 성공
+    OK(HttpStatus.OK, "성공"),
 
-    CUSTOM_EXCEPTION("800", "오류가 발생했습니다. 확인 후 다시 시도해주세요.", HttpStatus.BAD_REQUEST),
-    INVALID_REQUEST("801", "유효하지 않은 요청입니다.", HttpStatus.BAD_REQUEST),
-    FORBIDDEN_REQUEST("802", "허용되지 않은 요청입니다.", HttpStatus.FORBIDDEN),
-    DUPLICATED_REQUEST("803", "중복된 요청입니다.", HttpStatus.CONFLICT),
-    NOT_FOUND("804", "존재하지 않는 정보입니다.", HttpStatus.NOT_FOUND),
-    UNAUTHORIZED("805", "유효하지 않은 권한입니다.", HttpStatus.UNAUTHORIZED),
+    // 공통 (도메인 무관)
+    SYSTEM_CUSTOM_EXCEPTION(HttpStatus.BAD_REQUEST, "오류가 발생했습니다. 확인 후 다시 시도해주세요."),
+    VALIDATION_INVALID_REQUEST(HttpStatus.BAD_REQUEST, "유효하지 않은 요청입니다."),
+    PERMISSION_FORBIDDEN(HttpStatus.FORBIDDEN, "허용되지 않은 요청입니다."),
+    RESOURCE_DUPLICATED(HttpStatus.CONFLICT, "중복된 요청입니다."),
+    RESOURCE_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 정보입니다."),
 
-    INTERNAL_SERVER_ERROR("900", "내부 오류가 발생했습니다.", HttpStatus.INTERNAL_SERVER_ERROR),
-    METHOD_ARGUMENT_NOT_VALID("901", "파라미터가 유효하지 않습니다.", HttpStatus.BAD_REQUEST),
-    MISSING_SERVLET_REQUEST_PARAMETER("902", "필수 파라미터가 누락되었습니다.", HttpStatus.BAD_REQUEST),
-    CONSTRAINT_VIOLATION("903", "파라미터 유효성 검사에 실패했습니다.", HttpStatus.BAD_REQUEST),
-    METHOD_ARGUMENT_TYPE_MISMATCH("904", "파라미터 타입이 올바르지 않습니다.", HttpStatus.BAD_REQUEST),
-    NO_HANDLER_FOUND("905", "요청한 URL을 찾을 수 없습니다.", HttpStatus.NOT_FOUND),
-    HTTP_REQUEST_METHOD_NOT_SUPPORTED("906", "지원하지 않는 메서드입니다.", HttpStatus.METHOD_NOT_ALLOWED),
-    HTTP_MEDIA_TYPE_NOT_SUPPORTED("907", "지원되지 않는 미디어 타입입니다.", HttpStatus.UNSUPPORTED_MEDIA_TYPE),
-    HTTP_MESSAGE_NOT_READABLE_EXCEPTION("908", "읽을 수 있는 요청 정보가 없습니다.", HttpStatus.BAD_REQUEST),
+    // 할 일
+    TODO_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 할 일입니다."),
+
+    // 시스템 (ExceptionAdvice 가 프레임워크 예외를 자동 매핑)
+    SYSTEM_INTERNAL_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "내부 오류가 발생했습니다."),
+    VALIDATION_METHOD_ARGUMENT_INVALID(HttpStatus.BAD_REQUEST, "파라미터가 유효하지 않습니다."),
+    VALIDATION_PARAMETER_MISSING(HttpStatus.BAD_REQUEST, "필수 파라미터가 누락되었습니다."),
+    VALIDATION_CONSTRAINT_VIOLATED(HttpStatus.BAD_REQUEST, "파라미터 유효성 검사에 실패했습니다."),
+    VALIDATION_PARAMETER_TYPE_MISMATCH(HttpStatus.BAD_REQUEST, "파라미터 타입이 올바르지 않습니다."),
+    VALIDATION_MESSAGE_NOT_READABLE(HttpStatus.BAD_REQUEST, "읽을 수 있는 요청 정보가 없습니다."),
+    SYSTEM_NO_HANDLER_FOUND(HttpStatus.NOT_FOUND, "요청한 URL을 찾을 수 없습니다."),
+    SYSTEM_METHOD_NOT_SUPPORTED(HttpStatus.METHOD_NOT_ALLOWED, "지원하지 않는 메서드입니다."),
+    SYSTEM_MEDIA_TYPE_NOT_SUPPORTED(HttpStatus.UNSUPPORTED_MEDIA_TYPE, "지원되지 않는 미디어 타입입니다."),
+    ;
+
+    /** 응답 본문의 statusCode (enum 이름) */
+    val code: String
+        get() = name
 }

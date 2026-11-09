@@ -6,7 +6,6 @@ import com.example.api.common.type.ApiStatus
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.validation.ConstraintViolationException
 import org.slf4j.LoggerFactory
-import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.http.converter.HttpMessageNotReadableException
 import org.springframework.web.HttpMediaTypeNotSupportedException
@@ -37,7 +36,7 @@ class ExceptionAdvice {
         } else {
             log.warn("ApiException: {} {} - {}", request.method, request.requestURI, ex.message)
         }
-        return respond(ex.httpStatus, ex.apiStatus, request, ex.message)
+        return respond(ex.apiStatus, request, ex.message)
     }
 
     /**
@@ -61,19 +60,19 @@ class ExceptionAdvice {
     ): ResponseEntity<ErrorResponse> {
         val apiStatus =
             when (ex) {
-                is MethodArgumentNotValidException -> ApiStatus.METHOD_ARGUMENT_NOT_VALID
-                is HandlerMethodValidationException -> ApiStatus.CONSTRAINT_VIOLATION
-                is ConstraintViolationException -> ApiStatus.CONSTRAINT_VIOLATION
-                is MissingServletRequestParameterException -> ApiStatus.MISSING_SERVLET_REQUEST_PARAMETER
-                is MethodArgumentTypeMismatchException -> ApiStatus.METHOD_ARGUMENT_TYPE_MISMATCH
-                is NoHandlerFoundException -> ApiStatus.NO_HANDLER_FOUND
-                is NoResourceFoundException -> ApiStatus.NO_HANDLER_FOUND
-                is HttpRequestMethodNotSupportedException -> ApiStatus.HTTP_REQUEST_METHOD_NOT_SUPPORTED
-                is HttpMediaTypeNotSupportedException -> ApiStatus.HTTP_MEDIA_TYPE_NOT_SUPPORTED
-                else -> ApiStatus.HTTP_MESSAGE_NOT_READABLE_EXCEPTION
+                is MethodArgumentNotValidException -> ApiStatus.VALIDATION_METHOD_ARGUMENT_INVALID
+                is HandlerMethodValidationException -> ApiStatus.VALIDATION_CONSTRAINT_VIOLATED
+                is ConstraintViolationException -> ApiStatus.VALIDATION_CONSTRAINT_VIOLATED
+                is MissingServletRequestParameterException -> ApiStatus.VALIDATION_PARAMETER_MISSING
+                is MethodArgumentTypeMismatchException -> ApiStatus.VALIDATION_PARAMETER_TYPE_MISMATCH
+                is NoHandlerFoundException -> ApiStatus.SYSTEM_NO_HANDLER_FOUND
+                is NoResourceFoundException -> ApiStatus.SYSTEM_NO_HANDLER_FOUND
+                is HttpRequestMethodNotSupportedException -> ApiStatus.SYSTEM_METHOD_NOT_SUPPORTED
+                is HttpMediaTypeNotSupportedException -> ApiStatus.SYSTEM_MEDIA_TYPE_NOT_SUPPORTED
+                else -> ApiStatus.VALIDATION_MESSAGE_NOT_READABLE
             }
         log.warn("{}: {} {} - {}", ex.javaClass.simpleName, request.method, request.requestURI, ex.message)
-        return respond(apiStatus.httpStatus, apiStatus, request, validationMessage(ex))
+        return respond(apiStatus, request, validationMessage(ex))
     }
 
     @ExceptionHandler(Exception::class)
@@ -82,8 +81,7 @@ class ExceptionAdvice {
         request: HttpServletRequest,
     ): ResponseEntity<ErrorResponse> {
         log.error("Exception: {} {}", request.method, request.requestURI, ex)
-        val apiStatus = ApiStatus.INTERNAL_SERVER_ERROR
-        return respond(apiStatus.httpStatus, apiStatus, request)
+        return respond(ApiStatus.SYSTEM_INTERNAL_ERROR, request)
     }
 
     /**
@@ -113,12 +111,11 @@ class ExceptionAdvice {
         }
 
     private fun respond(
-        httpStatus: HttpStatus,
         apiStatus: ApiStatus,
         request: HttpServletRequest,
         message: String? = null,
     ): ResponseEntity<ErrorResponse> =
         ResponseEntity
-            .status(httpStatus)
+            .status(apiStatus.httpStatus)
             .body(ErrorResponse.of(apiStatus, request.method, request.requestURI, message ?: apiStatus.message))
 }

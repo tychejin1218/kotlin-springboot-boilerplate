@@ -87,8 +87,8 @@ class TodoControllerTest(
     fun `정의되지 않은 상태 필터는 400 과 기본 메시지로 응답한다`() {
         mockMvc.get("/todos") { param("status", "unknown") }.andExpect {
             status { isBadRequest() }
-            jsonPath("$.statusCode") { value(ApiStatus.METHOD_ARGUMENT_NOT_VALID.code) }
-            jsonPath("$.message") { value(ApiStatus.METHOD_ARGUMENT_NOT_VALID.message) }
+            jsonPath("$.statusCode") { value(ApiStatus.VALIDATION_METHOD_ARGUMENT_INVALID.code) }
+            jsonPath("$.message") { value(ApiStatus.VALIDATION_METHOD_ARGUMENT_INVALID.message) }
         }
     }
 
@@ -101,12 +101,12 @@ class TodoControllerTest(
     }
 
     @Test
-    fun `단건 조회 대상이 없으면 404 와 804 로 응답한다`() {
-        every { todoService.getTodo(99) } throws ApiException(ApiStatus.NOT_FOUND)
+    fun `단건 조회 대상이 없으면 404 와 TODO_NOT_FOUND 로 응답한다`() {
+        every { todoService.getTodo(99) } throws ApiException(ApiStatus.TODO_NOT_FOUND)
 
         mockMvc.get("/todos/99").andExpect {
             status { isNotFound() }
-            jsonPath("$.statusCode") { value(ApiStatus.NOT_FOUND.code) }
+            jsonPath("$.statusCode") { value(ApiStatus.TODO_NOT_FOUND.code) }
         }
     }
 

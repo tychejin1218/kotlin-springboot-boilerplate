@@ -50,5 +50,6 @@ class TodoService(
         findTodo(id).softDelete()
     }
 
-    private fun findTodo(id: Long): Todo = todoRepository.findByIdOrNull(id) ?: throw ApiException(ApiStatus.NOT_FOUND)
+    private fun findTodo(id: Long): Todo =
+        todoRepository.findByIdOrNull(id) ?: throw ApiException(ApiStatus.TODO_NOT_FOUND)
 }
